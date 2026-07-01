@@ -1,0 +1,85 @@
+{
+  "whitening_tone": {
+    "설명": "미백·톤업 효능",
+    "targets": {
+      "anti_hyperpigmentation": "색소침착 억제",
+      "brightening": "피부 밝기 개선",
+      "skin_brightening": "피부 톤 밝힘",
+      "antioxidant": "항산화 (활성산소 제거)",
+      "melanin_inhibition": "멜라닌 생성 억제"
+    }
+  },
+  "anti_wrinkle": {
+    "설명": "주름·탄력 개선 효능",
+    "targets": {
+      "anti_wrinkle": "주름 개선",
+      "anti_aging": "노화 방지",
+      "firming": "피부 탄탄함 강화",
+      "elasticity": "탄력 개선",
+      "collagen_synthesis": "콜라겐 합성 촉진",
+      "collagen_production": "콜라겐 생성 촉진",
+      "collagen_stimulating": "콜라겐 자극·활성화"
+    }
+  },
+  "hydration": {
+    "설명": "보습·수분 공급 효능",
+    "targets": {
+      "hydration": "수분 공급",
+      "moisturizing": "보습",
+      "water_retention": "수분 보유력 강화",
+      "humectant": "흡습제 (외부 수분 흡수)"
+    }
+  },
+  "soothing": {
+    "설명": "진정·민감 완화 효능",
+    "targets": {
+      "soothing": "피부 진정",
+      "anti_inflammatory": "항염증",
+      "calming": "자극 완화",
+      "redness_reduction": "홍조·붉음증 감소",
+      "skin_calming": "피부 진정 (광범위)",
+      "microbiome_balance": "피부 마이크로바이옴 균형"
+    }
+  },
+  "acne": {
+    "설명": "여드름·트러블 케어 효능",
+    "targets": {
+      "anti_acne": "여드름 억제",
+      "acne_control": "여드름 관리",
+      "antimicrobial": "항균 (세균 억제)",
+      "antibacterial": "항박테리아",
+      "sebostatic": "피지 분비 억제"
+    }
+  },
+  "pore_sebum": {
+    "설명": "모공·피지 관리 효능",
+    "targets": {
+      "pore_minimizing": "모공 축소",
+      "sebum_control": "피지 조절",
+      "pore_tightening": "모공 타이트닝",
+      "oil_control": "유분 조절"
+    }
+  },
+  "barrier": {
+    "설명": "피부 장벽·보호 효능",
+    "targets": {
+      "barrier_repair": "피부 장벽 회복",
+      "skin_barrier": "피부 장벽 강화",
+      "wound_healing": "상처 회복·재생",
+      "emollient": "연화제 (피부 유연화)",
+      "ceramide_synthesis": "세라마이드 합성 촉진",
+      "photoprotection": "자외선 차단·광보호"
+    }
+  },
+  "exfoliation": {
+    "설명": "각질·피부결 개선 효능",
+    "targets": {
+      "exfoliation": "각질 제거",
+      "exfoliating": "각질 제거 (API 반환값)",
+      "skin_texture": "피부결 개선",
+      "smoothing": "피부 표면 매끄럽게",
+      "cell_turnover": "세포 재생 촉진",
+      "keratolytic": "각질 용해"
+    }
+  }
+}
