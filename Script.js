@@ -13,7 +13,7 @@ db.products_summarized.find({})
 
 db.reviews.countDocuments()
 db.products.countDocuments()
-db.product_summarized.countDocuments()
+db.products_summarized.countDocuments()
 
 
 
@@ -22,6 +22,6 @@ db.products.find().sort({ _id: 1 }).skip(100).limit(10)
 
 
 
-
+db.products_summarized.drop()
 
 
