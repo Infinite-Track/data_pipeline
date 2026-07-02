@@ -1,6 +1,7 @@
 """
-step7: products_summarized 컬렉션의 11개 피부 고민 점수를 전체 제품 기준으로
-min-max 정규화(0~100)하여 products_normalized 컬렉션에 저장합니다.
+step7: products_summarized 컬렉션을 그대로 복사하되,
+11개 피부 고민 점수만 전체 제품 기준 min-max 정규화(0~100)하여
+products_normalized 컬렉션에 저장합니다.
 """
 import asyncio
 import os
@@ -34,18 +35,15 @@ async def run() -> None:
     src_col, dst_col = _get_cols()
     await dst_col.create_index("product_name", unique=True)
 
-    projection = {"_id": 0, "product_name": 1, "brand": 1, "category": 1,
-                  **{f: 1 for f in CONCERN_FIELDS}}
-
     docs = []
-    async for doc in src_col.find({}, projection):
+    async for doc in src_col.find({}, {"_id": 0}):
         docs.append(doc)
 
     if not docs:
         logger.warning("[STEP7] products_summarized 컬렉션이 비어 있습니다.")
         return
 
-    # 각 고민별 min/max 계산
+    # 11개 고민 점수 min/max 계산
     min_max: dict[str, tuple[float, float]] = {}
     for field in CONCERN_FIELDS:
         values = [d[field] for d in docs if d.get(field) is not None]
@@ -57,24 +55,19 @@ async def run() -> None:
         lo, hi = min_max[field]
         logger.info(f"  {field}: [{lo:.4f}, {hi:.4f}]")
 
-    # 정규화 후 products_normalized에 upsert
+    # products_summarized 스키마 그대로 복사 + 11개 점수만 정규화
     for doc in docs:
-        normalized: dict = {
-            "product_name": doc.get("product_name"),
-            "brand":        doc.get("brand"),
-            "category":     doc.get("category"),
-        }
+        record = dict(doc)
         for field in CONCERN_FIELDS:
-            raw = doc.get(field)
+            raw = record.get(field)
             if raw is None:
-                normalized[field] = None
                 continue
             lo, hi = min_max[field]
-            normalized[field] = 0 if hi == lo else round((raw - lo) / (hi - lo) * 100, 2)
+            record[field] = 0 if hi == lo else round((raw - lo) / (hi - lo) * 100, 2)
 
         await dst_col.update_one(
-            {"product_name": normalized["product_name"]},
-            {"$set": normalized},
+            {"product_name": record["product_name"]},
+            {"$set": record},
             upsert=True,
         )
 
