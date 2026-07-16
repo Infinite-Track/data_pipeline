@@ -1,4 +1,4 @@
-db.createCollection('products_summarized')
+db.createCollection('products_normalized')
 db.reviews.find({})    
 
 db.createCollection('products')
@@ -9,6 +9,8 @@ Object.keys(db.product_summarized.findOne())
 db.reviews.find({})   
 db.products.find({})
 db.products_summarized.find({})
+db.products_normalized.find({})
+
 
 
 db.reviews.countDocuments()
@@ -22,6 +24,6 @@ db.products.find().sort({ _id: 1 }).skip(100).limit(10)
 
 
 
-db.products_summarized.drop()
+db.products_normalized.drop()
 
 

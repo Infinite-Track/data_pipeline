@@ -1,109 +1,61 @@
+"""
+seoulection 데이터 파이프라인 v2 (2차 스프린트)
+
+YouTube 채널 자동 추적 → 신규 영상 수집 → 리뷰 검증 → 상품 집계 →
+성분 추출(Gemini 크롤링) → 성분 특징 분석(INCI API) → 추천 스키마 요약 → 고정기준 정규화
+
+각 step 모듈의 run()은 DB에만 부작용이 격리된 순수 async 함수로 작성되어 있다.
+현재 단계에서는 아래처럼 순차 실행만 하지만, 추후 Prefect + EC2로 옮길 때는
+run()을 그대로 @task로 감싸고 main()을 @flow로 감싸기만 하면 되도록 구조를 맞춰뒀다.
+"""
 import asyncio
-import json
-from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
 
-import steps.step1_summarize as step1
-import steps.step2_extract as step2
-import steps.step3_save as step3
-import steps.step4_analyze_reviews as step4
-import steps.step5_extract_products_info as step5
-import steps.step6_summarize_products as step6
-import steps.step7_normalization as step7
-from steps.step1_summarize import extract_video_id
+import steps.step1_detect_new_videos as step1
+import steps.step2_collect_reviews as step2
+import steps.step3_validate_reviews as step3
+import steps.step4_analyze_products as step4
+import steps.step5_extract_ingredients as step5
+import steps.step6_extract_ingredient_features as step6
+import steps.step7_summarize_products as step7
+import steps.step8_normalize_scores as step8
 
 load_dotenv()
-
-ROOT = Path(__file__).parent
-URLS_FILE = ROOT / "urls.txt"
-PRODUCTS_SUMMARIZED_FILE = ROOT / "products_summarized.json"
-
-
-def read_urls(path: Path) -> list[str]:
-    if not path.exists():
-        logger.error(f"urls.txt not found at {path}")
-        return []
-    return [
-        line.strip()
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
 
 
 async def main() -> None:
     logger.info("=" * 50)
-    logger.info("파이프라인 시작")
+    logger.info("파이프라인 v2 시작")
     logger.info("=" * 50)
 
-    urls = read_urls(URLS_FILE)
-    if not urls:
-        logger.warning("처리할 URL이 없습니다.")
-        return
+    # STEP 1 · 채널별 신규 영상 판별 (YouTube Data API + 규칙 필터 + LLM 리뷰영상 판별)
+    await step1.run()
 
-    await step3.ensure_indexes()
+    # STEP 2 · PENDING 영상 → Gemini 요약 → raw_reviews 저장
+    await step2.run()
 
-    # ──────────────────────────────────────────────────────────────
-    #  STEP 1 · 2 · 3   영상 URL → 요약 → 제품 추출 → DB 저장
-    # ──────────────────────────────────────────────────────────────
-    for url in urls:
-        video_id = extract_video_id(url)
-        if not video_id:
-            logger.warning(f"[SKIP] URL 파싱 실패: {url}")
-            continue
-
-        if await step3.already_exists(video_id):
-            logger.info(f"[SKIP] 이미 처리된 영상: {video_id}")
-            continue
-
-        # STEP 1 ─ 영상 요약
-        summary = await step1.run(url)
-        if not summary:
-            logger.error(f"[FAIL] STEP 1 요약 실패: {video_id}")
-            continue
-
-        # STEP 2 ─ 스킨케어 제품 추출
-        products = await step2.run(summary)
-        if not products:
-            logger.warning(f"[SKIP] STEP 2 추출된 제품 없음: {video_id}")
-            continue
-
-        # STEP 3 ─ reviews 컬렉션에 저장
-        for product in products:
-            record = {**summary, **product, "source": "youtube"}
-            await step3.save(record)
-            logger.info(f"[SAVE] {video_id} → {product.get('product_name')}")
-
-    # ──────────────────────────────────────────────────────────────
-    #  STEP 4   reviews 집계 → products 컬렉션
-    # ──────────────────────────────────────────────────────────────
+    # STEP 3 · raw_reviews 검증(제품 추출 + 품질 채점) → reviews 저장
+    await step3.run()
+    '''
+    # STEP 4 · reviews 집계(품질 통과분만, 상품명 정규화) → products 저장
     await step4.run()
 
-    # ──────────────────────────────────────────────────────────────
-    #  STEP 5   Gemini 성분 검색 + INCI API 분석 → products 업데이트
-    # ──────────────────────────────────────────────────────────────
+    # STEP 5 · Gemini 크롤링(브랜드 공식 사이트 / 올리브영)으로 성분 추출 → products 업데이트
     await step5.run()
 
-    # ──────────────────────────────────────────────────────────────
-    #  STEP 6   효능·위험도 점수 요약 → products_summarized 컬렉션
-    # ──────────────────────────────────────────────────────────────
+    # STEP 6 · INCI API로 성분 특징 분석 → products.inciapi_raw_data 저장
     await step6.run()
 
-    # ──────────────────────────────────────────────────────────────
-    #  STEP 7   피부 고민 점수 min-max 정규화 → products_summarized 업데이트
-    # ──────────────────────────────────────────────────────────────
+    # STEP 7 · 11개 효능 + 피부타입 적합도 + 위험도 점수 산출 → products_summarized 저장
     await step7.run()
 
-    # products_summarized 컬렉션 → JSON 내보내기
-    records = await step6.fetch_all()
-    PRODUCTS_SUMMARIZED_FILE.write_text(
-        json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    logger.info(f"[EXPORT] {len(records)}개 → products_summarized.json")
-
+    # STEP 8 · 효능 점수 고정 기준 정규화(0~100) → products_normalized 저장
+    await step8.run()
+    '''
     logger.info("=" * 50)
-    logger.info("파이프라인 완료")
+    logger.info("파이프라인 v2 완료")
     logger.info("=" * 50)
 
 
