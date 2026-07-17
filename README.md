@@ -1,35 +1,56 @@
-# data_pipeline
+# data_pipeline (v2 · 2차 스프린트)
 
-YouTube 스킨케어 영상을 분석해 제품별 피부 고민 효능 점수를 산출하는 데이터 파이프라인입니다.
+YouTube 채널을 자동으로 추적해 스킨케어 제품 리뷰를 분석하고, 제품별 피부 고민 효능 점수를 산출하는 데이터 파이프라인입니다.
 
 ## 파이프라인 흐름
 
-![파이프라인 다이어그램](/description/seoulection_datapipeline.drawio.png)
+```
+[채널 추적: youtubers 컬렉션]
+    │
+    ▼
+[Step 1] 신규 영상 판별
+    │   channels.list(uploads 재생목록 ID 조회) + playlistItems.list로 채널별 신규 영상 조회
+    │   (search.list는 쿼터가 비싸고 2026-06-01부터 일일 호출 제한이 걸려 사용하지 않음)
+    │   제목/설명/태그로 리뷰 영상 여부 판별(LLM: YES/NO/UNSURE) — 길이 제한 없음(쇼츠 포함)
+    │   NO는 스킵, YES/UNSURE는 videos 컬렉션에 저장(status=PENDING)
+    ▼
+[Step 2] 신규 수집 (영상 → 리뷰 원본)
+    │   status=PENDING 영상 URL을 Gemini에 전달해 "언급된 제품별로" 설명 + ad_likelihood 산출
+    │   (영상 하나에 제품이 여러 개면 raw_reviews 문서도 그 개수만큼 생성됨)
+    │   출력 형식이 깨지면 1회 재시도 → raw_reviews 컬렉션에 저장
+    ▼
+[Step 3] 리뷰 검증
+    │   raw_reviews의 제품별 content에서 brand를 추출하고 category를 6개 중 하나로 분류
+    │   (Cleansers/Toners/Treatments/Moisturizers/Sunscreens/Face Masks 외에는 리뷰 자체를 버림)
+    │   specificity / relevance / skin_info 3축을 1~5점으로 채점
+    │   품질 점수와 무관하게 reviews 컬렉션에 저장 (품질 필터링은 다음 단계)
+    ▼
+[Step 4] 리뷰 분석 (리뷰 → 상품)
+    │   3축 점수 기준 quality_passed 계산 → 미달 리뷰는 집계 제외
+    │   신규 상품이면 Amazon Global(Gemini + Google 검색 그라운딩)에서 공식 상품명 조회 후 통일
+    │   (Amazon에서 못 찾은 신규 상품은 제외 — 최종적으로 아마존 제휴링크 유도가 목적이라
+    │    아마존에 없는 상품은 추천 대상이 될 수 없음)
+    │   product_name/brand/category는 전부 소문자 + 공백 제거로 저장
+    │   mention_count / ad_ratio 집계 → products 컬렉션 저장
+    ▼
+[Step 5] 성분 추출 (상품에 성분 추가)
+    │   ※ 현재 Amazon API 미확보 → Gemini 웹서치로 대체
+    │   브랜드 공식 사이트 → 올리브영 순으로 전성분(INCI) 리스트 크롤링
+    ▼
+[Step 6] 성분 특징 추출
+    │   INCI API(POST /analyze)로 성분 기반 효능/안전성 분석 → inciapi_raw_data 저장
+    ▼
+[Step 7] 개인화 추천 스키마 요약
+    │   11개 효능 점수 + 4개 피부타입 적합도 + 5개 위험도 플래그 산출
+    │   → products_summarized 컬렉션 저장
+    ▼
+[Step 8] 정규화
+        11개 효능 점수를 "고정 기준(fixed reference)"으로 0~100 정규화
+        (v1과 달리 새 데이터가 들어와도 과거 상품의 점수가 변하지 않음)
+        → products_normalized 컬렉션 저장 (추천 알고리즘이 소비하는 최종 데이터)
+```
 
-```
-YouTube URL
-    │
-    ▼
-[Step 1] 영상 자막 추출 & Gemini 요약
-    │
-    ▼
-[Step 2] 스킨케어 제품 정보 추출 (제품명 / 브랜드 / 카테고리 / 광고비율 / 언급횟수)
-    │
-    ▼
-[Step 3] reviews 컬렉션 저장 (영상별 언급 제품 원본)
-    │
-    ▼
-[Step 4] reviews 집계 → products 컬렉션 (광고 가중 점수 산출)
-    │
-    ▼
-[Step 5] Gemini 웹서치로 INCI 성분 리스트 수집 + INCI API 분석 → products 업데이트
-    │       (성분 10개 이하 제품은 신뢰도 낮아 INCI API 스킵)
-    ▼
-[Step 6] 효능·위험도 점수 계산 → products_summarized 컬렉션
-    │       (11개 피부 고민 점수 / 4개 피부 타입 호환성 / 5개 위험도 플래그)
-    ▼
-[Step 7] 11개 피부 고민 점수 min-max 정규화(0~100) → products_normalized 컬렉션
-```
+> 이전 버전(1차 스프린트) 다이어그램은 `description/seoulection_datapipeline.drawio.png` 참고.
 
 ## 환경 설정
 
@@ -44,14 +65,17 @@ MONGODB_URI=mongodb+srv://...
 MONGODB_DB_NAME=your_db_name
 GEMINI_API_KEY=...
 INCI_API_KEY=...
+YOUTUBE_API_KEY=...       # STEP1: YouTube Data API v3 키 (신규 추가 필요)
 ```
 
-### YouTube URL 추가 (`urls.txt`)
+### 채널 등록 (`youtubers` 컬렉션)
+STEP1은 `youtubers` 컬렉션에 이미 등록된 채널만 조회합니다. 채널 추가/등록 자동화는
+이번 스프린트 범위에 없으므로, 아래 형태로 문서를 직접 넣어줘야 합니다.
+```json
+{ "channel_name": "채널명", "url": "https://www.youtube.com/channel/UCxxxx" }
 ```
-# 주석은 #으로 시작
-https://www.youtube.com/watch?v=XXXXXXXXX
-https://www.youtube.com/watch?v=XXXXXXXXX
-```
+(`url`이 `@handle` 형태면 STEP1이 YouTube API로 channel_id를 자동 조회합니다. `last_checked_at`이
+없으면 최초 실행 시 최근 24시간을 기준으로 조회합니다.)
 
 ## 실행
 
@@ -59,42 +83,21 @@ https://www.youtube.com/watch?v=XXXXXXXXX
 python main.py
 ```
 
-이미 처리된 영상은 자동으로 스킵됩니다.
-
 ## MongoDB 컬렉션 구조
 
 | 컬렉션 | 설명 |
 |--------|------|
-| `reviews` | 영상별 언급 제품 원본 데이터 |
-| `products` | 제품별 집계 + INCI 성분 분석 결과 |
-| `products_summarized` | 11개 피부 고민 점수 + 위험도 + 피부 타입 호환성 (원본 점수) |
-| `products_normalized` | `products_summarized`와 동일 스키마, 11개 피부 고민 점수만 0~100 정규화 |
+| `youtubers` | 추적 대상 채널 목록 + 채널별 마지막 확인 시각(`last_checked_at`) |
+| `videos` | STEP1이 판별한 신규 영상. `status`: PENDING → COMPLETED / EXCEPTION |
+| `raw_reviews` | 제품 단위 Gemini 요약 원본(영상 1개 → 언급 제품 수만큼 문서) + ad_likelihood |
+| `reviews` | 영상에서 추출된 제품 단위 리뷰 + 품질 채점(specificity/relevance/skin_info) |
+| `products` | 품질 통과 리뷰 집계 + 성분(ingredients) + INCI 원본 분석(inciapi_raw_data). `raw_key`는 Amazon 재검색을 막기 위한 내부 식별자(1차 표기 정규화 값)이며 `name`(최종 통일된 상품명)과 다를 수 있음 |
+| `products_summarized` | 11개 효능 점수(원본) + 위험도 + 피부 타입 적합도 |
+| `products_normalized` | `products_summarized`와 동일 스키마, 11개 효능 점수만 고정 기준으로 0~100 정규화 |
 
-## 출력 데이터 스키마 (`products_normalized`)
+## 추후 계획 (이번 스프린트 범위 아님)
 
-### 11개 피부 고민 점수 (0 ~ 100, 높을수록 해당 고민에 효과적)
-| 필드 | 피부 고민 |
-|------|----------|
-| `dark_circle` | 다크서클 |
-| `wrinkle` | 주름 |
-| `oily` | 유분 |
-| `pore` | 모공 |
-| `blackhead` | 블랙헤드 |
-| `acne` | 여드름 |
-| `sensitivity` | 민감성 |
-| `melanin` | 멜라닌(색소침착) |
-| `hydration` | 수분 |
-| `rough` | 거칠기 |
-| `red_spot` | 홍조·붉은점 |
-
-### 4개 피부 타입 호환성 (1.0 = 잘 맞음 / 0.5 = 보통 / 0.0 = 주의)
-`skin_type_oily` / `skin_type_dry` / `skin_type_normal` / `skin_type_combination`
-
-### 5개 위험도 플래그
-| 필드 | 설명 |
-|------|------|
-| `irritancy_risk` | 자극 위험도 (0.0 ~ 1.0) |
-| `comedogenicity_risk` | 모공 막힘 위험도 (0.0 ~ 1.0) |
-| `fragrance_risk` | 향료 포함 여부 (0 / 1) |
-| `allergen_risk` | 알레르기 유발 성분 포함 여부 (0 / 1) |
-| `pregnancy_risk` | 임산부 주의 성분 포함 여부 (0 / 1) |
+- **Prefect + EC2**: 각 step 모듈의 `run()`은 이미 부작용이 DB로 격리된 순수 async 함수라
+  나중에 `@task`/`@flow`로 감싸고 EC2에 스케줄러로 올리기만 하면 되도록 구조를 맞춰뒀습니다.
+- **Amazon API 연동**: STEP5는 현재 Gemini 웹서치(브랜드 공식 사이트/올리브영)로 성분을 채우고
+  있으며, Amazon 상품 링크를 확보하면 `products_catalog` 컬렉션 경로를 추가할 계획입니다.
