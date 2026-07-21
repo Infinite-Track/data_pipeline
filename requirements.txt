@@ -1,10 +1,7 @@
-google-generativeai
-youtube-transcript-api
-yt-dlp
 motor
 pymongo
 python-dotenv
 loguru
-asyncio
-openai-whisper
-pydub
+prefect
+requests
+google-genai

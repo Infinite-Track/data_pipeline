@@ -12,6 +12,11 @@ products_summarized 컬렉션으로 변환한다.
 
 점수 산출 로직(효능 매핑 테이블 등)은 1차 스프린트에서 검증된 방식을 그대로 사용하고,
 입력 데이터 위치만 step6이 저장한 products.inciapi_raw_data 구조에 맞춰 읽는다.
+
+products.status가 COMPLETE(=step6의 INCI 분석까지 끝남)인 상품만 대상으로 하고,
+요약을 마치면 SUMMARIZED로 갱신해 다음 실행에서 같은 상품을 다시 처리하지 않는다.
+(products.status 전체 흐름: PENDING → NOT_FOUND/INSUFFICIENT_INGREDIENTS/READY_FOR_ANALYSIS
+→ COMPLETE → SUMMARIZED)
 """
 import asyncio
 import datetime
@@ -21,24 +26,28 @@ from loguru import logger
 from steps.db import get_collection
 
 # ── 피부 고민 → INCI efficacy target 매핑 ──────────────────────────────────
+# 실제 INCI API topEffects에서 나오는 target만 사용 (공식 문서엔 전체 목록이 없어 실제 호출로 확인, 16개).
+# 같은 target이 여러 고민에 겹쳐 들어가는 건 의도된 것이다 (예: antioxidant는 dark_circle/wrinkle/
+# melanin 모두에 기여, sebum_control은 acne/oily_intensity 모두에 기여).
+# pores는 대응 target이 없어 아래에서 별도(proxy) 계산한다.
 CONCERN_TARGETS: dict[str, list[str]] = {
     "dark_circle": ["anti_hyperpigmentation", "brightening", "antioxidant", "photoprotection"],
-    "wrinkle": ["anti_wrinkle", "anti_aging", "collagen_stimulating", "antioxidant", "photoprotection"],
+    "wrinkle": ["anti_wrinkle", "anti_aging", "collagen_stimulating", "elasticity", "antioxidant", "photoprotection"],
     "blackhead": ["exfoliating"],
-    "acne": ["anti_acne", "antimicrobial"],
+    "acne": ["anti_acne", "sebum_control"],
     "sensitivity": ["anti_inflammatory", "wound_healing", "microbiome_balance"],
     "melanin": ["anti_hyperpigmentation", "brightening", "antioxidant"],
     "water": ["hydration"],
     "rough": ["exfoliating", "barrier_repair"],
     "red_spot": ["anti_inflammatory", "microbiome_balance"],
-    # oily_intensity / pores는 API에 대응 target이 없어 아래에서 별도(proxy) 계산한다.
+    "oily_intensity": ["sebum_control"],
 }
 
 STRENGTH_SCORE: dict[str, float] = {"strong": 0.9, "moderate": 0.55, "weak": 0.25}
 EVIDENCE_WEIGHT: dict[str, float] = {"meta_analysis": 1.0, "rct": 0.85, "in_vitro": 0.6, "anecdotal": 0.4}
 COMPAT_SCORE: dict[str, float] = {"good": 1.0, "neutral": 0.5, "caution": 0.1, "avoid": 0.0}
 IRRITANCY_SCORE: dict[str, float] = {"none": 0.0, "low": 0.25, "moderate": 0.6, "high": 1.0}
-FRAGRANCE_NAMES = {"FRAGRANCE", "PARFUM", "FRAGRANCE/PARFUM", "AROMA"}
+FRAGRANCE_NAMES = {"FRAGRANCE", "PARFUM", "FRAGRANCE/PARFUM", "AROMA",'FLAVOR'}
 
 
 def _get_products_collection():
@@ -71,8 +80,6 @@ def _calc_concern_scores(product: dict) -> dict[str, float]:
         )
         scores[concern] = round(total * ingredient_weight, 3)
 
-    scores["oily_intensity"] = scores["acne"]  # proxy: 유분 관련 target 없음 → 여드름 점수 재사용
-
     comedo = inci.get("comedogenicityScore") or 0.0
     scores["pores"] = round((1 - comedo / 5) * ingredient_weight, 3)  # proxy: 낮은 모공막힘 지수일수록 좋음
 
@@ -80,12 +87,14 @@ def _calc_concern_scores(product: dict) -> dict[str, float]:
 
 
 def _calc_skin_type_compat(product: dict) -> dict[str, float]:
+    # 데이터가 없어 모르는 경우는 "중립(0.5)"이 아니라 0으로 처리한다.
+    # 모르는 걸 추천 대상으로 볼 수는 없기 때문이다.
     compat = (product.get("inciapi_raw_data") or {}).get("skinTypeCompatibility") or {}
     return {
-        "skin_type_oily": COMPAT_SCORE.get(compat.get("oily") or "", 0.5),
-        "skin_type_dry": COMPAT_SCORE.get(compat.get("dry") or "", 0.5),
-        "skin_type_normal": COMPAT_SCORE.get(compat.get("normal") or "", 0.5),
-        "skin_type_combination": COMPAT_SCORE.get(compat.get("combination") or "", 0.5),
+        "skin_type_oily": COMPAT_SCORE.get(compat.get("oily") or "", 0),
+        "skin_type_dry": COMPAT_SCORE.get(compat.get("dry") or "", 0),
+        "skin_type_normal": COMPAT_SCORE.get(compat.get("normal") or "", 0),
+        "skin_type_combination": COMPAT_SCORE.get(compat.get("combination") or "", 0),
     }
 
 
@@ -112,9 +121,9 @@ async def run() -> None:
     products_col, summarized_col = _get_products_collection(), _get_summarized_collection()
     await summarized_col.create_index("product_name", unique=True)
 
-    products = [doc async for doc in products_col.find({"inciapi_raw_data": {"$ne": None}}, {"_id": 0})]
+    products = [doc async for doc in products_col.find({"status": "COMPLETE"}, {"_id": 0})]
     if not products:
-        logger.warning("[STEP7] INCI 분석이 끝난 상품이 없습니다.")
+        logger.info("[STEP7] 요약할 상품(status=COMPLETE)이 없습니다.")
         return
 
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -129,8 +138,9 @@ async def run() -> None:
             "summarized_at": now,
         }
         await summarized_col.update_one({"product_name": record["product_name"]}, {"$set": record}, upsert=True)
+        await products_col.update_one({"name": product["name"]}, {"$set": {"status": "SUMMARIZED"}})
 
-    logger.info(f"[STEP7] {len(products)}개 상품 → products_summarized 저장 완료.")
+    logger.info(f"[STEP7] {len(products)}개 상품 → products_summarized 저장 완료 (status: COMPLETE → SUMMARIZED).")
 
 
 if __name__ == "__main__":

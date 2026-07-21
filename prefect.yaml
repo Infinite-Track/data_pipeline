@@ -1,0 +1,25 @@
+name: dataPipeline_ex
+prefect-version: 3.7.8
+
+build: null
+push: null
+
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /app
+
+deployments:
+  - name: seoulection-pipeline-daily
+    entrypoint: main.py:main
+    work_pool:
+      name: seoulection-docker-pool
+      job_variables:
+        image: seoulection-pipeline:latest
+        image_pull_policy: Never
+        env:
+          MONGODB_URI: mongodb://host.docker.internal:27017
+          MONGODB_DB_NAME: seoulection
+    schedule:
+      cron: "10 18 * * *"
+      timezone: Asia/Seoul
+    tags: [kbeauty, pipeline]

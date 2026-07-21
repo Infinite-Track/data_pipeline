@@ -4,7 +4,11 @@ STEP 1 · 신규 영상 판별
 youtubers 컬렉션에 등록된 채널마다 last_checked_at 이후 새로 올라온 영상을 가져온 뒤,
 LLM 기반 판별을 거쳐 videos 컬렉션에 저장한다.
 
-    제목 + 설명 + 태그를 Gemini에 전달해 "스킨케어 리뷰 영상인지"를 YES / NO / UNSURE로 판별
+    videos 컬렉션에 이미 저장된 적 있는 video_id는 재분석하지 않고 건너뛴다 (last_checked_at을
+    과거로 되돌려 넓은 기간을 다시 훑을 때, 이미 처리 완료된 영상까지 재분류/재저장되는 것을 방지).
+
+    아직 저장된 적 없는 영상만 제목 + 설명 + 태그를 Gemini에 전달해
+    "스킨케어 리뷰 영상인지"를 YES / NO / UNSURE로 판별
     - NO  → 저장하지 않고 스킵 (로그만 남김)
     - YES, UNSURE → videos 컬렉션에 status=PENDING으로 저장 (다음 step2가 소비)
 
@@ -34,6 +38,7 @@ import asyncio
 import datetime
 import os
 import re
+from urllib.parse import unquote
 
 import requests
 from dotenv import load_dotenv
@@ -76,6 +81,17 @@ async def ensure_indexes() -> None:
     logger.info("[STEP1] videos.video_id 유니크 인덱스 확인 완료.")
 
 
+async def _video_already_exists(video_id: str) -> bool:
+    """videos 컬렉션에 이미 저장된 적 있는 영상인지 확인한다.
+
+    last_checked_at을 과거로 되돌려 넓은 기간을 다시 훑을 때, 이미 처리된(문서가 있는)
+    영상까지 재분류/재저장하지 않도록 막는 용도다. status와 무관하게 문서 존재 여부만 본다 —
+    이미 한 번 판단이 끝난 영상이면 재분석하지 않는다.
+    """
+    doc = await _get_videos_collection().find_one({"video_id": video_id}, {"_id": 1})
+    return doc is not None
+
+
 # ── 채널 ID 해석 ──────────────────────────────────────────────────────────
 # youtuber 문서의 url이 "/channel/UC..." 형태면 바로 추출하고,
 # "@handle" 형태면 YouTube API(forHandle)로 채널 ID를 조회한다.
@@ -83,7 +99,9 @@ def _resolve_channel_id(youtuber_doc: dict) -> str | None:
     if youtuber_doc.get("channel_id"):
         return youtuber_doc["channel_id"]
 
-    url = youtuber_doc.get("url", "")
+    # url이 퍼센트 인코딩(예: 한글 핸들이 %EB%B0%95...로 저장된 경우)되어 있을 수 있어 먼저 디코딩한다.
+    # 안 되어 있어도 unquote는 그대로 반환하므로 항상 적용해도 안전하다.
+    url = unquote(youtuber_doc.get("url", ""))
     match = re.search(r"/channel/(UC[\w-]{10,})", url)
     if match:
         return match.group(1)
@@ -238,6 +256,8 @@ async def run() -> None:
         logger.warning("[STEP1] youtubers 컬렉션에 등록된 채널이 없습니다.")
         return
 
+    added_count = 0  # 이번 run() 전체에서 videos 컬렉션에 새로 저장된 영상 수
+
     for channel in channels:
         channel_id = await asyncio.to_thread(_resolve_channel_id, channel)
         if not channel_id:
@@ -252,9 +272,9 @@ async def run() -> None:
             logger.warning(f"[STEP1] {channel.get('channel_name')}: uploads 재생목록을 찾을 수 없습니다.")
             continue
 
-        # last_checked_at이 없으면 24시간 전부터 조회 (최초 등록 채널 대비)
+        # last_checked_at이 없으면 30일 전부터 조회 (최초 등록 채널 대비)
         published_after = channel.get("last_checked_at") or (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30)
         ).isoformat()
         published_after_dt = _to_datetime(published_after)
 
@@ -265,11 +285,18 @@ async def run() -> None:
 
         latest_published_at, latest_dt = published_after, published_after_dt
         for item in items:
+            video_id = item["id"]
             snippet = item.get("snippet", {})
             published_at = snippet.get("publishedAt", published_after)
             published_dt = _to_datetime(published_at)
             if published_dt > latest_dt:
                 latest_dt, latest_published_at = published_dt, published_at
+
+            # 이미 분석된 적 있는 영상이면 재분석하지 않음 (last_checked_at을 과거로 되돌려
+            # 넓은 기간을 다시 훑을 때, 이미 처리된 영상까지 다시 걸리는 것을 방지)
+            if await _video_already_exists(video_id):
+                logger.info(f"[STEP1][SKIP] 이미 분석된 영상: {snippet.get('title')}")
+                continue
 
             # LLM 기반 리뷰 영상 판별
             classification = await asyncio.to_thread(
@@ -283,10 +310,12 @@ async def run() -> None:
                 continue
 
             await _save_pending_video(channel_id, item)
+            added_count += 1
             logger.info(f"[STEP1][SAVE] ({classification}) {snippet.get('title')}")
 
         await _update_last_checked_at(channel["_id"], latest_published_at)
-        logger.info(f"[STEP1] {channel.get('channel_name')}: last_checked_at → {latest_published_at}")
+
+    logger.info(f"[STEP1] 이번 실행에서 총 {added_count}개 영상이 videos 컬렉션에 추가됨.")
 
 
 if __name__ == "__main__":

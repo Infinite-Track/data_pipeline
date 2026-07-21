@@ -11,6 +11,10 @@ videos 컬렉션에서 status=PENDING인 영상을 Gemini 3.5 Flash에 URL 그�
 출력은 raw_reviews 컬렉션에 저장하며, 영상 1개 → raw_reviews 문서는 "언급된 제품 개수"만큼 생긴다.
 product_name/content/ad_likelihood는 모두 제품 단위로 매겨진다 (제품마다 광고성 정도가 다를 수 있어서).
 
+product_name은 항상 영어로만 추출한다 (한국어 리뷰 영상이라 한글/영어가 섞여서 나오기 쉬운데,
+STEP3 브랜드·카테고리 추출, STEP4 Amazon 검색/그룹핑이 전부 이 값을 기준으로 동작하므로
+여기서부터 형식을 통일해두면 이후 단계에서 표기 차이로 인한 문제가 줄어든다).
+
 출력 형식이 깨지거나(JSON 파싱 실패) 모델이 과부하로 실패하면 1회 재시도한다.
 재시도까지 실패하면 video.status를 EXCEPTION으로 남기고, 제품이 하나도 언급되지 않은 경우엔
 COMPLETED로 남기고(정상 처리됐지만 다룰 게 없었던 경우) 다음 영상으로 넘어간다.
@@ -56,7 +60,10 @@ def _build_prompt() -> str:
         "(explicit: 'gifted by', 'sponsored', 'discount code'; implicit: overly positive, brand-first language).\n\n"
         'Return raw JSON only, no markdown: an ARRAY where each element is:\n'
         '{"product_name": string, "content": string, "ad_likelihood": float between 0.0 and 1.0}\n'
-        "- product_name: the specific product name (include brand if mentioned)\n"
+        "- product_name: the product name in ENGLISH ONLY (include brand). If the video shows/says "
+        "both a Korean and an English name, use the English name. If only a Korean name is shown, "
+        "romanize/translate it to the closest official English product name — never output Korean "
+        "characters or a mix of Korean and English in this field.\n"
         "- content: a thorough description about THIS product only\n"
         "- ad_likelihood: 0.0 = definitely organic, 1.0 = definitely a paid ad\n"
         "If no skincare/beauty product is mentioned, return an empty array [].\n"

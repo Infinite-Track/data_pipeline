@@ -1,0 +1,14 @@
+.env
+.git
+.gitignore
+.claude
+data_pipeline_ex/
+__pycache__/
+*.pyc
+*.pyo
+README.md
+CLAUDE.md
+description
+Script.js
+urls.txt
+products_normalized.json

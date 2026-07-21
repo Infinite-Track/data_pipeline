@@ -1,12 +1,15 @@
 """
 STEP 6 · 성분 특징 추출 (상품의 특징/이론 추가)
 
-step5에서 채운 ingredients를 INCI API(POST /analyze)에 전달해
-성분 기반 효능·안전성 분석 데이터를 받아온다. (필드 의미는 description/INCI_FIELD_REFERENCE.txt 참고)
+step5에서 status=READY_FOR_ANALYSIS로 남긴(성분을 충분히 찾은) 상품만 가져와
+INCI API(POST /analyze)에 전달해 성분 기반 효능·안전성 분석 데이터를 받아온다.
+(필드 의미는 description/INCI_FIELD_REFERENCE.txt 참고)
 
 원본 응답은 products.inciapi_raw_data에 그대로 저장한다 (요약/가공은 다음 step7 담당).
-추가로 파이프라인 자체 계산값인 inci_coverage(성분 인식률)를 함께 저장해
+API 응답에 이미 포함된 coverage(성분 인식 비율, 0~1)를 inci_coverage로 그대로 저장해
 step7이 "성분 데이터를 얼마나 신뢰할 수 있는지" 가중치로 쓸 수 있게 한다.
+분석까지 끝나면 status를 COMPLETE로 갱신한다 (성분 개수 기준 필터링은 STEP5가 이미 끝냈으므로
+여기서는 다시 확인하지 않는다).
 """
 import asyncio
 import datetime
@@ -17,14 +20,13 @@ from dotenv import load_dotenv
 from loguru import logger
 
 from steps.db import get_collection
+from steps.step5_extract_ingredients import MIN_INGREDIENTS_FOR_ANALYSIS
 
 load_dotenv()
 
 INCI_API_KEY = os.getenv("INCI_API_KEY")
 INCI_API_BASE = "https://inciapi.com/v1"
-
-# 성분이 이 개수 이하면 INCI 분석 신뢰도가 낮다고 보고 스킵한다 (products.status는 PENDING 유지).
-MIN_INGREDIENTS_FOR_ANALYSIS = 10
+MAX_ATTEMPTS = 3
 
 if not INCI_API_KEY:
     logger.warning("INCI_API_KEY가 설정되지 않았습니다. STEP6은 실행되지 않습니다.")
@@ -38,37 +40,42 @@ async def fetch_products_needing_analysis() -> list[dict]:
     col = _get_products_collection()
     return [
         doc async for doc in col.find(
-            {"status": "COMPLETE", "inciapi_raw_data": None},
+            {"status": "READY_FOR_ANALYSIS"},
             {"_id": 0, "name": 1, "ingredients": 1},
         )
     ]
 
 
 def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
-    try:
-        response = requests.post(
-            f"{INCI_API_BASE}/analyze",
-            headers={"X-API-Key": INCI_API_KEY, "Content-Type": "application/json"},
-            json={"inci": ingredients[:200]},
-            timeout=30,
+    """INCI API를 호출한다. 실패(오류 상태코드/예외)하면 MAX_ATTEMPTS번까지 재시도한다.
+
+    성분이 MIN_INGREDIENTS_FOR_ANALYSIS 미만이면 호출 자체를 하지 않는다. STEP5가 이미
+    이 기준으로 걸러서(READY_FOR_ANALYSIS만 STEP6에 넘어옴) 정상적으로는 여기 걸릴 일이
+    없어야 하지만, 이 함수만 따로 호출되는 경우에도 안전하도록 방어적으로 한 번 더 확인한다.
+    """
+    if len(ingredients) < MIN_INGREDIENTS_FOR_ANALYSIS:
+        logger.warning(
+            f"[STEP6] 성분 {len(ingredients)}개(<{MIN_INGREDIENTS_FOR_ANALYSIS}) → INCI API 호출 스킵."
         )
-        if response.status_code != 200:
-            logger.warning(f"[STEP6] INCI API {response.status_code}: {response.text[:200]}")
-            return None
-        return response.json()
-    except Exception as exc:
-        logger.warning(f"[STEP6] INCI API 요청 실패: {exc}")
         return None
 
-
-def _calc_coverage(raw: dict) -> float | None:
-    """parsedIngredients 중 found=true 비율 = 성분 데이터 신뢰도(coverage)."""
-    data = raw.get("analysis") or raw
-    parsed = data.get("parsedIngredients") or []
-    if not parsed:
-        return None
-    found = sum(1 for i in parsed if i.get("found"))
-    return round(found / len(parsed), 3)
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            response = requests.post(
+                f"{INCI_API_BASE}/analyze",
+                headers={"X-API-Key": INCI_API_KEY, "Content-Type": "application/json"},
+                json={"inci": ingredients[:200]},
+                timeout=30,
+            )
+            if response.status_code != 200:
+                logger.warning(
+                    f"[STEP6] INCI API {response.status_code} (시도 {attempt + 1}/{MAX_ATTEMPTS}): {response.text[:200]}"
+                )
+                continue
+            return response.json()
+        except Exception as exc:
+            logger.warning(f"[STEP6] INCI API 요청 실패 (시도 {attempt + 1}/{MAX_ATTEMPTS}): {exc}")
+    return None
 
 
 async def _save_analysis(name: str, raw: dict) -> None:
@@ -78,11 +85,13 @@ async def _save_analysis(name: str, raw: dict) -> None:
         {"name": name},
         {"$set": {
             "inciapi_raw_data": data,
-            "inci_coverage": _calc_coverage(raw),
+            # coverage(성분 인식 비율, 0~1)는 API가 이미 계산해서 주므로 직접 재계산하지 않는다.
+            "inci_coverage": data.get("coverage"),
             "analyzed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "status": "COMPLETE",
         }},
     )
-    logger.info(f"[STEP6][SAVE] {name!r}: INCI 분석 저장 완료.")
+    logger.info(f"[STEP6][COMPLETE] {name!r}: INCI 분석 저장 완료.")
 
 
 async def run() -> None:
@@ -98,9 +107,6 @@ async def run() -> None:
     for product in products:
         name = product["name"]
         ingredients = product.get("ingredients") or []
-        if len(ingredients) <= MIN_INGREDIENTS_FOR_ANALYSIS:
-            logger.warning(f"[STEP6][SKIP] {name!r}: 성분 {len(ingredients)}개(≤{MIN_INGREDIENTS_FOR_ANALYSIS}) → 신뢰도 낮아 스킵.")
-            continue
 
         raw = await asyncio.to_thread(_analyze_via_inci_api_sync, ingredients)
         if not raw:
