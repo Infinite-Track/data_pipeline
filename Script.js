@@ -1,29 +1,45 @@
-db.createCollection('products_normalized')
-db.reviews.find({})    
-
-db.createCollection('products')
-db.products.findOne({product_name: 'powder primer'}, {ingredients: 1, _id: 0})
 db
-// 최상위 필드명만
-Object.keys(db.product_summarized.findOne())
-db.reviews.find({})   
+
+db.createCollection('youtubers')
+db.createCollection('videos')
+db.createCollection('raw_reviews')
+db.createCollection('reviews')
+
+
+/*db.youtubers.insertOne({
+  channel_name: "RISABAE",
+  url: "https://www.youtube.com/@RISABAE",
+  foreign:true
+})
+
+db.reviews.find({status:'COMPLETED'},{})
+db.raw_reviews.distinct("product_name")
+db.reviews.countDocuments()
+db.reviews.updateMany(
+  {status: "NOTFOUND"},
+  {$set: {status: "PENDING"}}
+)
+db.products.aggregate([
+  { $match: { "inciapi_raw_data.efficacySummary.topEffects": { $exists: true } } },
+  { $unwind: "$inciapi_raw_data.efficacySummary.topEffects" },
+  { $group: { _id: "$inciapi_raw_data.efficacySummary.topEffects.target" } },
+  { $sort: { _id: 1 } }
+])
+*/
+
+// 얘너 잘 제외되는지 각스텝별로 봐라
+db.reviews.find({video_id:'RKVf0uGzELI'},{})
+db.raw_reviews.find({video_id:'RKVf0uGzELI'},{})
+db.videos.find({video_id:'RKVf0uGzELI'},{})
+
+
+db.youtubers.find({})
+db.videos.find({})
+db.raw_reviews.find({})
+db.reviews.find({})
 db.products.find({})
 db.products_summarized.find({})
-db.products_normalized.find({})
 
 
-
-db.reviews.countDocuments()
-db.products.countDocuments()
-db.products_summarized.countDocuments()
-
-
-
-// 101~120번째만 (20개)
-db.products.find().sort({ _id: 1 }).skip(100).limit(10)
-
-
-
-db.products_normalized.drop()
 
 

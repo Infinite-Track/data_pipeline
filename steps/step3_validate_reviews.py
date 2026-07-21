@@ -21,10 +21,14 @@ STEP3는 그 제품별 content를 검증 AI에 전달해 두 가지를 수행한
 검증 메타데이터(validator_model, validator_prompt_version, validated_at)를 함께 기록해
 추후 프롬프트를 바꿨을 때 어떤 버전으로 채점된 데이터인지 추적할 수 있게 한다.
 
+저장 시 status="PENDING"으로 시작한다. 이후 STEP4가 품질 통과 여부 판정 + Amazon Global
+검증을 거쳐 DISQUALIFIED(품질 미달) / NOTFOUND(Amazon에 없음) / COMPLETED(집계 대상)로 갱신한다.
+
 멱등성: raw_reviews 문서에 processed_at이 이미 있으면 재처리하지 않는다.
 """
 import asyncio
 import datetime
+import time
 
 from loguru import logger
 
@@ -34,6 +38,9 @@ from steps.llm_utils import parse_json_response
 
 GEMINI_MODEL = "gemini-2.5-flash"
 VALIDATOR_PROMPT_VERSION = "v1"  # 프롬프트를 바꿀 때마다 올려서 채점 기준 변경 이력을 남긴다
+
+MAX_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 5  # 재시도 간격. 시도할 때마다 배수로 늘어난다 (5초 → 10초).
 
 # 허용하는 카테고리 6개. 이 중 하나로 분류되지 않으면 리뷰 자체를 저장하지 않는다.
 ALLOWED_CATEGORIES = (
@@ -83,24 +90,35 @@ def _build_prompt(product_name: str, content: str) -> str:
 
 
 def _validate_content_sync(product_name: str, content: str) -> dict | None:
+    """검증 AI를 호출한다. 실패(API 오류/형식 오류)하면 MAX_ATTEMPTS번까지, 시도 사이에
+    잠깐 텀을 두고 재시도한다 (Gemini 쪽 일시적 과부하(503 UNAVAILABLE) 등을 감안).
+    """
     client = get_client()
     if not client:
         return None
-    try:
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=_build_prompt(product_name, content))
-        parsed = parse_json_response(response.text or "")
-        if not isinstance(parsed, dict):
-            return None
-        return {
-            "brand": parsed.get("brand") or None,
-            "category": parsed.get("category") or None,
-            "specificity": int(parsed.get("specificity", 1)),
-            "relevance": int(parsed.get("relevance", 1)),
-            "skin_info": int(parsed.get("skin_info", 1)),
-        }
-    except Exception as exc:
-        logger.warning(f"[STEP3] 검증 실패: {exc}")
-        return None
+
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            response = client.models.generate_content(model=GEMINI_MODEL, contents=_build_prompt(product_name, content))
+            parsed = parse_json_response(response.text or "")
+            if isinstance(parsed, dict):
+                return {
+                    "brand": parsed.get("brand") or None,
+                    "category": parsed.get("category") or None,
+                    "specificity": int(parsed.get("specificity", 1)),
+                    "relevance": int(parsed.get("relevance", 1)),
+                    "skin_info": int(parsed.get("skin_info", 1)),
+                }
+            logger.warning(f"[STEP3] 출력 형식 이상 (시도 {attempt + 1}/{MAX_ATTEMPTS})")
+        except Exception as exc:
+            logger.warning(f"[STEP3] 검증 실패 (시도 {attempt + 1}/{MAX_ATTEMPTS}): {exc}")
+
+        if attempt < MAX_ATTEMPTS - 1:
+            wait_seconds = RETRY_DELAY_SECONDS * (attempt + 1)
+            logger.info(f"[STEP3] {wait_seconds}초 대기 후 재시도합니다.")
+            time.sleep(wait_seconds)
+
+    return None
 
 
 async def _save_review(raw_review: dict, scored: dict) -> None:
@@ -116,7 +134,9 @@ async def _save_review(raw_review: dict, scored: dict) -> None:
     }
     await col.update_one(
         {"video_id": record["video_id"], "product_name": record["product_name"]},
-        {"$set": record},
+        # status는 STEP4가 관리한다 (PENDING → DISQUALIFIED/NOTFOUND/COMPLETED).
+        # 이미 처리된 리뷰의 진행 상태를 덮어쓰지 않도록 최초 삽입 시에만 PENDING을 넣는다.
+        {"$set": record, "$setOnInsert": {"status": "PENDING"}},
         upsert=True,
     )
 

@@ -23,26 +23,34 @@ YouTube 채널을 자동으로 추적해 스킨케어 제품 리뷰를 분석하
     │   raw_reviews의 제품별 content에서 brand를 추출하고 category를 6개 중 하나로 분류
     │   (Cleansers/Toners/Treatments/Moisturizers/Sunscreens/Face Masks 외에는 리뷰 자체를 버림)
     │   specificity / relevance / skin_info 3축을 1~5점으로 채점
-    │   품질 점수와 무관하게 reviews 컬렉션에 저장 (품질 필터링은 다음 단계)
+    │   reviews 컬렉션에 status=PENDING으로 저장 (품질/Amazon 검증은 다음 단계)
     ▼
 [Step 4] 리뷰 분석 (리뷰 → 상품)
-    │   3축 점수 기준 quality_passed 계산 → 미달 리뷰는 집계 제외
-    │   신규 상품이면 Amazon Global(Gemini + Google 검색 그라운딩)에서 공식 상품명 조회 후 통일
-    │   (Amazon에서 못 찾은 신규 상품은 제외 — 최종적으로 아마존 제휴링크 유도가 목적이라
-    │    아마존에 없는 상품은 추천 대상이 될 수 없음)
+    │   PENDING 리뷰 중 3축 점수 미달은 DISQUALIFIED 처리 후 제외
+    │   나머지를 (product_name, brand) 원문 표기 기준으로 묶어, 고유 조합당 Amazon Global에서
+    │   공식 상품명/브랜드/카테고리 1회 검색(Gemini + Google 검색 그라운딩) 후 그 정보로 통일
+    │   (리뷰가 자체 추출한 brand/category보다 Amazon 공식 정보를 우선시함)
+    │   (다르게 표기된 동일 상품도 Amazon 검증 후 같은 이름으로 합쳐짐)
+    │   Amazon에 없으면 NOTFOUND 처리 후 제외 (최종 목표가 아마존 제휴링크 유도라
+    │    아마존에 없는 상품은 추천 대상이 될 수 없음), 찾으면 COMPLETED
     │   product_name/brand/category는 전부 소문자 + 공백 제거로 저장
-    │   mention_count / ad_ratio 집계 → products 컬렉션 저장
+    │   이번에 새로 COMPLETED된 리뷰만 집계해 mention_count / ad_likelihood_sum 계산 후
+    │   products에 $inc로 누적(기존 누적치 + 이번 배치분), ad_ratio는 누적치 기준으로 재계산
+    │   (reviews 전체를 매번 다시 긁어와 처음부터 재계산하지 않음)
     ▼
 [Step 5] 성분 추출 (상품에 성분 추가)
     │   ※ 현재 Amazon API 미확보 → Gemini 웹서치로 대체
-    │   브랜드 공식 사이트 → 올리브영 순으로 전성분(INCI) 리스트 크롤링
+    │   status=PENDING 상품 대상, 브랜드 공식 사이트 → 올리브영 순으로 전성분(INCI) 리스트 크롤링
+    │   결과에 따라 status: NOT_FOUND(못 찾음) / INSUFFICIENT_INGREDIENTS(10개 미만) /
+    │   READY_FOR_ANALYSIS(충분히 찾음, STEP6 대상)로 갱신
     ▼
 [Step 6] 성분 특징 추출
-    │   INCI API(POST /analyze)로 성분 기반 효능/안전성 분석 → inciapi_raw_data 저장
+    │   status=READY_FOR_ANALYSIS 상품만 INCI API(POST /analyze)로 효능/안전성 분석
+    │   → inciapi_raw_data 저장, status=COMPLETE로 갱신
     ▼
 [Step 7] 개인화 추천 스키마 요약
-    │   11개 효능 점수 + 4개 피부타입 적합도 + 5개 위험도 플래그 산출
-    │   → products_summarized 컬렉션 저장
+    │   status=COMPLETE 상품만 대상, 11개 효능 점수 + 4개 피부타입 적합도 + 5개 위험도 플래그 산출
+    │   → products_summarized 컬렉션 저장, status=SUMMARIZED로 갱신(재처리 방지)
     ▼
 [Step 8] 정규화
         11개 효능 점수를 "고정 기준(fixed reference)"으로 0~100 정규화
@@ -90,8 +98,8 @@ python main.py
 | `youtubers` | 추적 대상 채널 목록 + 채널별 마지막 확인 시각(`last_checked_at`) |
 | `videos` | STEP1이 판별한 신규 영상. `status`: PENDING → COMPLETED / EXCEPTION |
 | `raw_reviews` | 제품 단위 Gemini 요약 원본(영상 1개 → 언급 제품 수만큼 문서) + ad_likelihood |
-| `reviews` | 영상에서 추출된 제품 단위 리뷰 + 품질 채점(specificity/relevance/skin_info) |
-| `products` | 품질 통과 리뷰 집계 + 성분(ingredients) + INCI 원본 분석(inciapi_raw_data). `raw_key`는 Amazon 재검색을 막기 위한 내부 식별자(1차 표기 정규화 값)이며 `name`(최종 통일된 상품명)과 다를 수 있음 |
+| `reviews` | 제품 단위 리뷰 + 품질 채점(specificity/relevance/skin_info). `status`: PENDING → DISQUALIFIED(품질 미달) / NOTFOUND(Amazon에 없음) / COMPLETED(집계 대상, product_name/brand/category가 Amazon 기준으로 정규화됨) |
+| `products` | COMPLETED 리뷰 집계 + 성분(ingredients) + INCI 원본 분석(inciapi_raw_data). `status`는 reviews와 별개로 이 상품이 파이프라인 어디까지 처리됐는지 나타냄: `PENDING` → `NOT_FOUND`/`INSUFFICIENT_INGREDIENTS`/`READY_FOR_ANALYSIS` → `COMPLETE` → `SUMMARIZED` |
 | `products_summarized` | 11개 효능 점수(원본) + 위험도 + 피부 타입 적합도 |
 | `products_normalized` | `products_summarized`와 동일 스키마, 11개 효능 점수만 고정 기준으로 0~100 정규화 |
 
