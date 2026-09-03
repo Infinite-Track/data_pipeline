@@ -3,6 +3,7 @@
 
 # Python 가상환경
 data_pipeline_ex/
+data_pipeline/
 venv/
 .venv/
 

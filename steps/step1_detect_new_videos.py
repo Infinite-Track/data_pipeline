@@ -156,7 +156,7 @@ def _fetch_new_videos_sync(playlist_id: str, published_after_dt: datetime.dateti
             "key": YOUTUBE_API_KEY,
             "playlistId": playlist_id,
             "part": "snippet",
-            "maxResults": 50,
+            "maxResults": 60,
         },
         timeout=15,
     )
@@ -274,7 +274,7 @@ async def run() -> None:
 
         # last_checked_at이 없으면 30일 전부터 조회 (최초 등록 채널 대비)
         published_after = channel.get("last_checked_at") or (
-            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30)
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=90)
         ).isoformat()
         published_after_dt = _to_datetime(published_after)
 

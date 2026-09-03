@@ -23,6 +23,7 @@ import steps.step5_extract_ingredients as step5
 import steps.step6_extract_ingredient_features as step6
 import steps.step7_summarize_products as step7
 import steps.step8_normalize_scores as step8
+import steps.step9_publish_catalog as step9
 
 load_dotenv()
 
@@ -69,6 +70,11 @@ async def run_step8() -> None:
     await step8.run()
 
 
+@task(name="step9_publish_catalog", task_run_name="step9-run")
+async def run_step9() -> None:
+    await step9.run()
+
+
 @flow(name="kbeauty-pipeline", flow_run_name=lambda: f"pipeline-{datetime.now():%Y%m%d-%H%M}")
 async def main() -> None:
     logger.info("=" * 50)
@@ -98,6 +104,9 @@ async def main() -> None:
 
     # STEP 8 · 효능 점수 고정 기준 정규화(0~100) → products_normalized 저장
     await run_step8()
+
+    # STEP 9 · Mongo → PostgreSQL 발행 (products_catalog / products_url / products_normalized, asin 조인)
+    await run_step9()
 
     logger.info("=" * 50)
     logger.info("파이프라인 v2 완료")
