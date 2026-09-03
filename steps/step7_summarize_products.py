@@ -43,8 +43,8 @@ CONCERN_TARGETS: dict[str, list[str]] = {
     "oily_intensity": ["sebum_control"],
 }
 
-STRENGTH_SCORE: dict[str, float] = {"strong": 0.9, "moderate": 0.55, "weak": 0.25}
-EVIDENCE_WEIGHT: dict[str, float] = {"meta_analysis": 1.0, "rct": 0.85, "in_vitro": 0.6, "anecdotal": 0.4}
+STRENGTH_SCORE: dict[str, float] = {"strong": 0.9, "moderate": 0.55, "mild": 0.35, "weak": 0.25, "emerging": 0.2}
+EVIDENCE_WEIGHT: dict[str, float] = {"meta_analysis": 1.0, "rct": 0.85, "controlled_trial": 0.75, "cohort": 0.65, "in_vivo": 0.6, "in_vitro": 0.6, "anecdotal": 0.4}
 COMPAT_SCORE: dict[str, float] = {"good": 1.0, "neutral": 0.5, "caution": 0.1, "avoid": 0.0}
 IRRITANCY_SCORE: dict[str, float] = {"none": 0.0, "low": 0.25, "moderate": 0.6, "high": 1.0}
 FRAGRANCE_NAMES = {"FRAGRANCE", "PARFUM", "FRAGRANCE/PARFUM", "AROMA",'FLAVOR'}
@@ -119,7 +119,7 @@ def _calc_risk_flags(product: dict) -> dict:
 
 async def run() -> None:
     products_col, summarized_col = _get_products_collection(), _get_summarized_collection()
-    await summarized_col.create_index("product_name", unique=True)
+    await summarized_col.create_index("asin", unique=True, partialFilterExpression={"asin": {"$exists": True}})
 
     products = [doc async for doc in products_col.find({"status": "COMPLETE"}, {"_id": 0})]
     if not products:
@@ -129,6 +129,7 @@ async def run() -> None:
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     for product in products:
         record = {
+            "asin": product.get("asin"),
             "product_name": product["name"],
             "brand": product.get("brand"),
             "category": product.get("category"),
@@ -137,8 +138,8 @@ async def run() -> None:
             **_calc_risk_flags(product),
             "summarized_at": now,
         }
-        await summarized_col.update_one({"product_name": record["product_name"]}, {"$set": record}, upsert=True)
-        await products_col.update_one({"name": product["name"]}, {"$set": {"status": "SUMMARIZED"}})
+        await summarized_col.update_one({"asin": record["asin"]}, {"$set": record}, upsert=True)
+        await products_col.update_one({"asin": product["asin"]}, {"$set": {"status": "SUMMARIZED"}})
 
     logger.info(f"[STEP7] {len(products)}개 상품 → products_summarized 저장 완료 (status: COMPLETE → SUMMARIZED).")
 

@@ -1,0 +1,1460 @@
+[
+  {
+    "id": 1,
+    "asin": "B0F1X19H5Y",
+    "product_name": "BRING GREEN Tea Tree CICA Facial Sun Cushion SPF 50+ PA++++ | Korean Mineral Sunscreen for Face | Non-Nano, Reef-Safe, Redness Correcting with Zinc Oxide | Travel Size Sun Protection",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=9QipKxeltDI",
+    "ad_likelihood": 0.3,
+    "review": "This physical sun cushion offers broad-spectrum SPF50+ PA++++ protection, soothing the skin while correcting tone, brightening, and improving wrinkles, all applied with a versatile two-sided puff."
+  },
+  {
+    "id": 2,
+    "asin": "B0DRBKTCL1",
+    "product_name": "beplain Mung Bean pH-Balanced Cleansing Foam for Sensitive Skin, 5.4 fl oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=K6S5SOdz4Eo",
+    "ad_likelihood": 0.1,
+    "review": "This acidic mung bean facial wash deeply cleanses sebum and clears pores, generating abundant foam while leaving skin feeling firm and adequately hydrated."
+  },
+  {
+    "id": 3,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=K6S5SOdz4Eo",
+    "ad_likelihood": 0.1,
+    "review": "This gentle salicylic acid toner pad addresses sebum, dead skin, and rough texture, leaving skin feeling purified, invigorated, and residue-free."
+  },
+  {
+    "id": 4,
+    "asin": "B0GK11JYNC",
+    "product_name": "DearKlairs EGF Serum - Blue Youth Activating Drop, 1.69 Fl Oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=K6S5SOdz4Eo",
+    "ad_likelihood": 0.1,
+    "review": "This blue serum, formulated with Guaiazulene and EGF, provides a cooling effect for irritated skin, reduces redness, and improves both acne and post-acne marks."
+  },
+  {
+    "id": 5,
+    "asin": "B0CXPMHGZP",
+    "product_name": "DearKlairs Midnight Blue Calming Cream | Face Moisturizer for Redness Relief, Guaiazulene, EGF & Ceramide, Post-Treatment Recovery, Korean Vegan Skincare for Sensitive Skin, 0.7 Oz (Pack of 1)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=K6S5SOdz4Eo",
+    "ad_likelihood": 0.1,
+    "review": "This hydrating Guaiazulene water-cream reduces redness and irritation with a lightweight texture, recommended for overnight application as a thick layer."
+  },
+  {
+    "id": 6,
+    "asin": "B0GK11JYNC",
+    "product_name": "DearKlairs EGF Serum - Blue Youth Activating Drop, 1.69 Fl Oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=fSLo1bbiui4",
+    "ad_likelihood": 0.8,
+    "review": "The 'Blue Drop' ampoule is a highly recommended first-step skincare treatment known for calming irritated skin, soothing active blemishes, and diminishing post-acne marks, with enhanced effects when combined with the Blue EGF Calming Gel Mask."
+  },
+  {
+    "id": 7,
+    "asin": "B0D6R3WKBH",
+    "product_name": "numbuzin No.1 Powder | Pantothenic B5 Active Drying Powder | Spot Treatment Acne, Pantothenic Acid, Niacinamide, Madecassoside | Excess Oil Control, Flattens Cystic Acne, Breakouts | 0.24 oz.",
+    "youtuber_name": "조말랭Jomalraeng",
+    "video_url": "https://www.youtube.com/watch?v=oRey2f9U740",
+    "ad_likelihood": 0.1,
+    "review": "This specialized nighttime skincare powder helps calm complexions and regulate sebum production overnight."
+  },
+  {
+    "id": 8,
+    "asin": "B0CZ72JG78",
+    "product_name": "S.NATURE AQUA OASIS MOISTURIZING GEL CREAM 80ml | Cooling & Soothing Facial Moisturizer for Oily & Combination Skin | Lightweight Cream, Vegan | Hyaluronic Acid, Allantoin | 2.7 Fl Oz",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=UsoxAu11MM4",
+    "ad_likelihood": 0.1,
+    "review": "This non-comedogenic, lightweight gel cream rapidly absorbs to improve skin's moisture and suppleness, making it ideal for warmer seasons."
+  },
+  {
+    "id": 9,
+    "asin": "B08BM5SR67",
+    "product_name": "Cell Fusion C Post Alpha First Cooling Sheet Mask 5EA, Hydrating, Cooling and De-puffing, Glacial Water & Panthenol, Korean Skin Care",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=UsoxAu11MM4",
+    "ad_likelihood": 0.1,
+    "review": "Enriched with panthenol, ceramide, cholesterol, and azulenol, this non-menthol hydrogel sheet mask delivers immediate cooling, fortifies the skin barrier, adheres effectively, and works well with ultrasound and EMS beauty devices."
+  },
+  {
+    "id": 10,
+    "asin": "B0FK9KK78T",
+    "product_name": "All Natural Houttuynia Cordata Mask Sheet - Heartleaf Soothing & Sebum Control Facial Sheet Mask, Gentle Formula for Daily Use (13ea)",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=UsoxAu11MM4",
+    "ad_likelihood": 0.1,
+    "review": "This lightweight Tencel sheet mask, featuring 50% Houttuynia Cordata, offers quick cooling and calming effects ideal for post-outdoor skin relief."
+  },
+  {
+    "id": 11,
+    "asin": "B0FT7S46NQ",
+    "product_name": "Fusidyne Derma Trouble Zinc Sunscreen SPF 50+, No White Cast, 50ml",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=2iMcyOSl3oM",
+    "ad_likelihood": 0.2,
+    "review": "This zinc oxide physical sunscreen is formulated for oily and acne-prone skin, featuring a proprietary blend that moisturizes, soothes, and regulates sebum with a moist, fast-absorbing, and easily washable application."
+  },
+  {
+    "id": 12,
+    "asin": "B0D62M93QY",
+    "product_name": "MEDIHEAL Madecassoside Repair Serum, Blemish Care & Hydration (1.35 fl.oz)",
+    "youtuber_name": "INBORA인보라",
+    "video_url": "https://www.youtube.com/watch?v=P7gmlYEGKVE",
+    "ad_likelihood": 0.1,
+    "review": "The creator integrates this hydrating serum into her routine, applying it generously to her face for year-round use."
+  },
+  {
+    "id": 13,
+    "asin": "B0C7P7FG3T",
+    "product_name": "S Nature Aqua Squalane Moisturizing Cream 60ml+30ml For all skin types - by calli shop",
+    "youtuber_name": "INBORA인보라",
+    "video_url": "https://www.youtube.com/watch?v=P7gmlYEGKVE",
+    "ad_likelihood": 0.2,
+    "review": "This light moisturizing cream is designed for use after eye cream to set the skin."
+  },
+  {
+    "id": 14,
+    "asin": "B0FS14HRMY",
+    "product_name": "Dr.Althea Aqua Marine Jelly Mist, 3.38 Fl Oz, Korean Vegan Skin Care",
+    "youtuber_name": "Gothamista",
+    "video_url": "https://www.youtube.com/watch?v=oqRBwiKAfDs",
+    "ad_likelihood": 0.1,
+    "review": "This refreshing jelly mist for overheated skin reduces temperature by 5°C, offering hydration and antioxidants, and contains malachite for color and xylitol for cooling, with a warning that xylitol is toxic to dogs."
+  },
+  {
+    "id": 15,
+    "asin": "B0DKF9WJSB",
+    "product_name": "FULLY Rice Dough Facial Modeling Mask, Instant Hydration Boost, Radiance Boost, Skin Moisture Barrier, Nourishing, Vegan Hyaluronic Acid, Rice Bran Water, Aloe Extract 1.76oz x 4ea",
+    "youtuber_name": "Gothamista",
+    "video_url": "https://www.youtube.com/watch?v=oqRBwiKAfDs",
+    "ad_likelihood": 0.1,
+    "review": "This rubber modeling mask is highly effective at cooling and calming skin, reducing temperature and redness by over 15% to leave it smooth and soft, comparable to post-procedure treatments from Korean dermatology clinics."
+  },
+  {
+    "id": 16,
+    "asin": "B0FS7QVSVC",
+    "product_name": "CENTELLIAN 24 Expert Madeca Cream Active Renew PDRN, TECA, Firming",
+    "youtuber_name": "Gothamista",
+    "video_url": "https://www.youtube.com/watch?v=oqRBwiKAfDs",
+    "ad_likelihood": 0.1,
+    "review": "This Korean pharmaceutical-grade moisturizer offers comforting skin recovery and effectively lowers skin temperature by 6°C via beta-sitosterol's internal cooling action."
+  },
+  {
+    "id": 17,
+    "asin": "B09YDCCJBJ",
+    "product_name": "AESTURA ATOBARRIER365 Cream with Ceramides, Korean Face Moisturizer for Barrier Repair | 120H lasting Hydration, Ceramide Capsules, Dry & Sensitive Skin, Non-comedogenic, 80 mL / 2.70 fl.oz.",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=3dFUYg-67ag",
+    "ad_likelihood": 0.2,
+    "review": "A Korean moisturizer receives strong praise for providing deep, non-greasy hydration that is highly effective for dry skin and alleviating tretinoin-induced dryness."
+  },
+  {
+    "id": 18,
+    "asin": "B07XXPHQZK",
+    "product_name": "LANEIGE Lip Sleeping Mask: Hydrating & Nourishing Korean Overnight Lip Treatment Mask with Shea Butter, Vitamin C & Murumuru, Antioxidants For Flaky, Dry Lips | Korean Skin Care, Berry",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=HzBSFGYQ2_M",
+    "ad_likelihood": 0.1,
+    "review": "Hyram critiques the popular lip mask for failing to adequately hydrate or nourish extremely dry lips, recommending other high-end alternatives."
+  },
+  {
+    "id": 19,
+    "asin": "B0DJGWH3TC",
+    "product_name": "ROUND LAB Birch Juice Moisturizing UV LOCK SPF 45, 1.69 Fl Oz, Hydrating Lotion-like Lightweight Glow Sunscreen for Sensitive Skin, No White Cast, Fragrance-Free, Protector Solar, Korean Sunscreen",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=tC-qIswHYhY",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer describes this highly-rated sunscreen as a heavy, moisturizing formula, best for dry skin and leaving no white cast, but personally found it too rich compared to his preference for lighter products."
+  },
+  {
+    "id": 20,
+    "asin": "B0CBSZW485",
+    "product_name": "Dr.Jart+ Every Sun Day Mineral Korean Sunscreen SPF 50+ for Face with Zinc Oxide | Korean Skin Care | Travel Size, 1.69 Fl Oz",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=tC-qIswHYhY",
+    "ad_likelihood": 0.0,
+    "review": "The reviewer harshly criticizes this $40 sunscreen for its potentially irritating citrus essential oils and high cost, despite acknowledging its past mattifying benefit."
+  },
+  {
+    "id": 21,
+    "asin": "B0FXH5LHN8",
+    "product_name": "SKIN1004 Centella Hyalu-Cica Water-Fit Sun Serum UV, Korean Sunscreen SPF 50, Centella Sunscreen, Travel Essentials, Sunscreen with Hyaluronic Acid, No White Cast, Korean Skin Care, 1.69 fl.oz / 50ml",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=tC-qIswHYhY",
+    "ad_likelihood": 0.3,
+    "review": "Initially skeptical, the reviewer was thoroughly impressed by this popular sunscreen's exceptionally lightweight, serum-like texture that feels invisible on the skin."
+  },
+  {
+    "id": 22,
+    "asin": "B0BZ3G9GKL",
+    "product_name": "haruharu Black Rice Moisture Airyfit Daily Sunscreen SPF50+ 1.69 fl.oz.",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=tC-qIswHYhY",
+    "ad_likelihood": 0.4,
+    "review": "This innovative sunscreen is highly recommended for its nourishing, non-greasy formula that provides a velvety, blurring finish, particularly beneficial for dry skin."
+  },
+  {
+    "id": 23,
+    "asin": "B0915K6WD3",
+    "product_name": "numbuzin No.3 Skin Softening Serum, Fermented Serum for Skin Texture & Pores, Bifida & Galactomyces, Niacinamide, Adenosine, Panthenol, Fragrance-Free, 1.69 fl oz (50ml)",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=ZawQ8aCr4cU",
+    "ad_likelihood": 0.1,
+    "review": "This serum, featuring fermented ingredients and niacinamide, effectively softened, brightened, and evened the reviewer's skin tone, though it did not reduce pore size."
+  },
+  {
+    "id": 24,
+    "asin": "B0GMWQYL4V",
+    "product_name": "SUNGBOON EDITOR Green Tomato NMN Pore Minimizing Ampoule, Firming Pore Minimizer Serum with NMN, Niacinamide & Green Tomato Extract, Lightweight Korean Skincare for Sensitive Skin, 1.35 Fl Oz",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=ZawQ8aCr4cU",
+    "ad_likelihood": 0.2,
+    "review": "This highly recommended ampoule effectively reduces enlarged pores by regulating sebum and hydrating skin, while also visibly firming and refining texture with ingredients like green tomato extract and Anti-Sebum P."
+  },
+  {
+    "id": 25,
+    "asin": "B0C7P7FG3T",
+    "product_name": "S Nature Aqua Squalane Moisturizing Cream 60ml+30ml For all skin types - by calli shop",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=ZawQ8aCr4cU",
+    "ad_likelihood": 0.1,
+    "review": "This highly praised, barrier-supporting moisturizer for dry and sensitive skin provides deep hydration and balances complexions with Squalane and Aquaxyl, featuring a unique thick-to-watery texture."
+  },
+  {
+    "id": 26,
+    "asin": "B0F1X19H5Y",
+    "product_name": "BRING GREEN Tea Tree CICA Facial Sun Cushion SPF 50+ PA++++ | Korean Mineral Sunscreen for Face | Non-Nano, Reef-Safe, Redness Correcting with Zinc Oxide | Travel Size Sun Protection",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=jJ43zyp26Uw",
+    "ad_likelihood": 0.4,
+    "review": "Selected as a 2026 top physical sun cushion, this product utilizes a green tint to neutralize redness and brighten skin, soothes with tea tree cica, provides moderate longevity and water resistance with easy removal, and is suitable for sensitive, dry, or oily skin and family use."
+  },
+  {
+    "id": 27,
+    "asin": "B0CQKVC9J4",
+    "product_name": "Essential Mool Micro Fitting Mist (1.86 Fl Oz)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "Esteemed for years, this mist's airy, hydrating formula effectively refines skin texture and imparts a glow by managing dead skin cells, preventing makeup from flaking in dry conditions."
+  },
+  {
+    "id": 28,
+    "asin": "B0FSPVHZ1N",
+    "product_name": "MAMONDE Flora Glow Rose Daily Liquid Face Mask | 2-in-1 Toner & Exfoliator | Korean Leave-On Mask with Hyaluronic Acid, Peptides & 10% PHA For Glass Skin | Korean Skin Care | Makeup Prep",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This PHA liquid mask gently exfoliates and hydrates, creating a smooth, radiant base perfect for makeup application."
+  },
+  {
+    "id": 29,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This pore-clearing pad effectively targets sebum, blackheads, and uneven skin texture, leaving a non-sticky finish ideal for oily skin."
+  },
+  {
+    "id": 30,
+    "asin": "B0GK11JYNC",
+    "product_name": "DearKlairs EGF Serum - Blue Youth Activating Drop, 1.69 Fl Oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This lightweight, instantly absorbing serum serves as a first-step treatment to control sebum, soothe acne, reduce redness, and fade post-blemish pigmentation, leaving skin fresh and refined."
+  },
+  {
+    "id": 31,
+    "asin": "B0GGH9DCKK",
+    "product_name": "MANYO Glutathione 7 Dark Spot Serum, Radiance Booster, 1.01 fl oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "A glutathione brightening serum effectively enhances skin clarity, radiance, and tone, especially when used in conjunction with Dermafirm Toning Cream R4, for noticeable results overnight."
+  },
+  {
+    "id": 32,
+    "asin": "B0D2Y3Y3BG",
+    "product_name": "BIOHEAL BOH Probioderm™ Collagen Remodeling Serum 1.01 fl oz (30 ml) | Skin Firming Serum with Collagen & 12 Peptides for Pore Tightening & Smoothing | Hydrating & Lifting for Daily Skincare",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This collagen serum, formulated with PHA, provides gentle exfoliation and deep hydration, resulting in smooth, firm, radiant, and dewy skin without irritation, contributing to a \"glass skin\" effect."
+  },
+  {
+    "id": 33,
+    "asin": "B0CXPMHGZP",
+    "product_name": "DearKlairs Midnight Blue Calming Cream | Face Moisturizer for Redness Relief, Guaiazulene, EGF & Ceramide, Post-Treatment Recovery, Korean Vegan Skincare for Sensitive Skin, 0.7 Oz (Pack of 1)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This highly effective soothing cream alleviates redness and irritation caused by a compromised skin barrier, absorbing smoothly to help restore natural balance."
+  },
+  {
+    "id": 34,
+    "asin": "B0BGHY6D2X",
+    "product_name": "innisfree Retinol Cica Serum with Salicylic Acid | Korean Moisture Recovery Treatment with Hyaluronic Acid for Hydrating Face Care | Suitable for Beginners and Acne-Prone Skin",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This hydrating, gentle retinol and cica ampoule is suitable for younger skin, improving texture, calming breakouts, and unifying skin tone."
+  },
+  {
+    "id": 35,
+    "asin": "B0DRBKTCL1",
+    "product_name": "beplain Mung Bean pH-Balanced Cleansing Foam for Sensitive Skin, 5.4 fl oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This mung bean-infused, weak-acidic cleansing foam deeply purifies pores and refines skin texture, leaving it feeling firm and clean without the harsh, stripped sensation of alkaline cleansers."
+  },
+  {
+    "id": 36,
+    "asin": "B08DFR5Y57",
+    "product_name": "LAGOM Cellup Gel To Water Cleanser, Gentle Morning Face Wash with Hydrating Aqualicia, Non-Foaming Jelly Texture for Daily Use, low-irritation,K-Skincare 5.74 Fl Oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=AEuNHUm6iqk",
+    "ad_likelihood": 0.1,
+    "review": "This non-foaming gel cleanser gently purifies morning skin without causing dryness, leaving it hydrated and refreshed, making it suitable for sensitive or compromised skin."
+  },
+  {
+    "id": 37,
+    "asin": "B0GK11JYNC",
+    "product_name": "DearKlairs EGF Serum - Blue Youth Activating Drop, 1.69 Fl Oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=vinVBetEYcQ",
+    "ad_likelihood": 1.0,
+    "review": "The \"Blue Drop\" is a concentrated soothing ampoule, featuring Guaiazulene and a high EGF concentration, marketed for rapidly calming active skin issues, reducing redness, and diminishing acne scarring, often used as a first-step treatment."
+  },
+  {
+    "id": 38,
+    "asin": "B0F89WR9BW",
+    "product_name": "HANYUL Artemisia Soothing Toner Pads with Centella Asiatica & Hyaluronic Acid | Hydrating & Soothing Pre-Makeup Korean Toner Pads to Calm Visible Redness | for All Skin Types | 60 Pads",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "This embossed pad functions as a cooling pack to reduce skin heat by delivering substantial moisture, but its tendency to roll up makes it inconvenient for quick application."
+  },
+  {
+    "id": 39,
+    "asin": "B0BHVBVRYY",
+    "product_name": "MEDIHEAL Madecassoside Blemish Care Toner Pad",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.2,
+    "review": "A gauze-textured pad, infused with a lightweight milky essence, provides refreshing hydration and a glass-skin glow, soothing and preparing skin for makeup."
+  },
+  {
+    "id": 40,
+    "asin": "B093ZGW6PR",
+    "product_name": "ROUND LAB Birch Juice Moisturizing Pad 80pcs",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "This thin, jelly hydrating pad provides light, watery moisture, ideal for oily skin or quick cooling, but insufficient for dry skin requiring deep or long-lasting hydration."
+  },
+  {
+    "id": 41,
+    "asin": "B0FSKSBRT2",
+    "product_name": "REJURAN® Pore Tightening Toner Pads, 60 Count, PDRx® 3% with DOT™ c-PDRN and AHA BHA PHA for Pore Care and Smoother-Looking Skin, Korean Skincare",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer found the pore-targeting pads had a thick, tacky essence and a heavy, stuffy finish, ultimately not delivering significant pore-tightening benefits."
+  },
+  {
+    "id": 42,
+    "asin": "B0BYYPN8Y9",
+    "product_name": "Cell Fusion C Post Alpha Cooling Pad – Hydrating & Cooling Korean Toner Pads | Panthenol & Glacier Water | Hydrating, Depuffing, Pore Care | 70 Pads / 6.08 fl.oz.",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "The sponge-like pad provides an intense cooling sensation that quickly cools skin, though some users may find its effect too strong."
+  },
+  {
+    "id": 43,
+    "asin": "B0DB87LZFZ",
+    "product_name": "UIQ Biome Remedy Pore Reset Pad, Niacinamide, Refine, 80pcs, 180ml/6.08oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.2,
+    "review": "This pad provides a powerful, minty cooling sensation with a clean, non-tacky feel, ideal for lowering skin temperature before makeup application."
+  },
+  {
+    "id": 44,
+    "asin": "B0GGTYLBSD",
+    "product_name": "AESTURA A-CICA365 Cooling Relief Toner Pads pH4.5 with Centella Asiatica + Hyaluronic Acid for Redness + Skin Barrier Support | Soothes & Calms | Suitable for Sensitive + Rosacea-Prone Skin, 60 Pads",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer noted that this soft, round soothing pad provides a relatively weak cooling effect and its excessive essence tends to drip."
+  },
+  {
+    "id": 45,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.2,
+    "review": "A topical pad effectively manages oily and acne-prone skin by reducing excess oil, clearing blackheads, and refining skin texture."
+  },
+  {
+    "id": 46,
+    "asin": "B0GYZBPT17",
+    "product_name": "numbuzin No.3 Bifida Bakuchiol Exfoliating Toner Pads - PHA + LHA Pore Care, Dual-Sided Pads for Blackheads & Whiteheads, Gentle for Sensitive Skin, 6.42 fl oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "Due to its fermented components, this pad may elicit a slight tingling, and it provides a prominent, luminous finish that could feel excessively rich or adhesive on oily skin."
+  },
+  {
+    "id": 47,
+    "asin": "B0CBTTKBXM",
+    "product_name": "Phyto-enzyme Peeling Pad (Refill)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.2,
+    "review": "This plant enzyme-infused pad provides gentle yet effective exfoliation, refining skin texture and leaving it remarkably soft."
+  },
+  {
+    "id": 48,
+    "asin": "B0GMJQ8QRC",
+    "product_name": "COSRX OneStep Blemish Pore Clear Toner Pads, Exfoliating Care (100 Pads)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "While effective for body acne and strong exfoliation, this BHA pad has been surpassed by numerous superior alternatives now available on the market."
+  },
+  {
+    "id": 49,
+    "asin": "B09V7Z4TJG",
+    "product_name": "medicube Toner Pads Zero Pore Pad 2.0 for Exfoliation and Pore Care",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=MK7FWQWkiYo",
+    "ad_likelihood": 0.1,
+    "review": "This exfoliating, oil-controlling pad imparts a dense, taut skin sensation that some users may perceive as sticky."
+  },
+  {
+    "id": 50,
+    "asin": "B0CLLV2T1P",
+    "product_name": "Anua Niacinamide 10 + TXA 4 Serum, Korean Skincare, 1.01 fl.oz",
+    "youtuber_name": "피부 지키는 용사_피용이TV",
+    "video_url": "https://www.youtube.com/watch?v=6bBrFUP0j8E",
+    "ad_likelihood": 0.8,
+    "review": "This highly concentrated serum, featuring 10% Niacinamide and 4% Tranexamic Acid for pigmentation, requires careful application methods like dilution or spot-treating to prevent potential skin irritation."
+  },
+  {
+    "id": 51,
+    "asin": "B0B2RM68G2",
+    "product_name": "BIODANCE Bio-Collagen Real Deep Mask, Hydrating Overnight Hydrogel Face Mask, Pore Minimizing, Elasticity, Plumping, Travel Essentials & Self Care Gifts for Women, Korean Skin Care | 1.19oz(34g) x 4ea",
+    "youtuber_name": "피부 지키는 용사_피용이TV",
+    "video_url": "https://www.youtube.com/watch?v=lxJJ8aZEYHM",
+    "ad_likelihood": 0.1,
+    "review": "This moisturizing gel mask effectively preps skin and offers temporary plumping, but frequent or prolonged use is warned against as it can damage the skin barrier by causing its outer layer to swell and detach."
+  },
+  {
+    "id": 52,
+    "asin": "B0GKCPDTRB",
+    "product_name": "IOPE Expert Retinol RX 2% Reti-Jection Serum - Anti-Aging Night Serum - Visibly Smooths Wrinkles, Firms Skin, and Refines Pores - Potent & Gentle - 1.01 fl. oz.",
+    "youtuber_name": "림온 RIMON",
+    "video_url": "https://www.youtube.com/watch?v=ApYs8uotWfU",
+    "ad_likelihood": 0.95,
+    "review": "This retinol serum, featuring spicule-encapsulated ingredients for deep delivery, is recommended for those in their 30s needing gentle summer collagen care to firm dull, sagging skin and improve elasticity without irritation."
+  },
+  {
+    "id": 53,
+    "asin": "B0DG1DQ2S7",
+    "product_name": "Anua Azelaic Acid 10 Hyaluron Redness Soothing Serum, 1.01 fl oz",
+    "youtuber_name": "Liah Yoo",
+    "video_url": "https://www.youtube.com/watch?v=E37bn5hvXzg",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer rated the product 6/10, experiencing dryness personally from its betaine salicylate, but acknowledged its niacinamide and zinc PCA could benefit oily, acne-prone skin."
+  },
+  {
+    "id": 54,
+    "asin": "B0DZNSTMY9",
+    "product_name": "TIRTIR Azelaic Acid 12% Serum for Blemish-Prone Skin - Lightweight Hydrating Formula with Zinc PCA & Hyal-ZIP, Non-Comedogenic, Fragrance-Free, 30ml / 1.01 Fl Oz",
+    "youtuber_name": "Liah Yoo",
+    "video_url": "https://www.youtube.com/watch?v=E37bn5hvXzg",
+    "ad_likelihood": 0.2,
+    "review": "Awarded a 7/10, the product features 12% azelaic acid with zinc PCA for sebum control and panthenol for soothing hydration, utilizing a special delivery system to boost ingredient absorption."
+  },
+  {
+    "id": 55,
+    "asin": "B0FP1PBQSW",
+    "product_name": "PURITO Azelaic 10% Kojic Serum for Sensitive Skin, 1.01 fl.oz",
+    "youtuber_name": "Liah Yoo",
+    "video_url": "https://www.youtube.com/watch?v=E37bn5hvXzg",
+    "ad_likelihood": 0.3,
+    "review": "This top-ranked product received an 8/10 from the reviewer, who was pleasantly surprised by its non-drying, balanced oil/water texture with encapsulated azelaic acid and tea tree oil, despite initial reservations about its ingredient blend."
+  },
+  {
+    "id": 56,
+    "asin": "B0FXH5LHN8",
+    "product_name": "SKIN1004 Centella Hyalu-Cica Water-Fit Sun Serum UV, Korean Sunscreen SPF 50, Centella Sunscreen, Travel Essentials, Sunscreen with Hyaluronic Acid, No White Cast, Korean Skin Care, 1.69 fl.oz / 50ml",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=qiJ0qGtBGN0",
+    "ad_likelihood": 0.3,
+    "review": "Hyram highly endorses a popular, ultra-lightweight Korean sunscreen as an effective and affordable substitute for high-end luxury options."
+  },
+  {
+    "id": 57,
+    "asin": "B09MN7P3RC",
+    "product_name": "DERMA FACTORY Niacinamide 20% Face Serum for Oily Skin, Pore Care",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=8HrGVg5K9GI",
+    "ad_likelihood": 0.1,
+    "review": "This serum, containing a high 20% Niacinamide that may cause irritation and lacks proven superior efficacy, is recommended for occasional night use on oily, acne-prone skin to improve texture."
+  },
+  {
+    "id": 58,
+    "asin": "B07881JZNR",
+    "product_name": "PDRN 4% Salmon DNA Serum with Niacinamide & Panthenol, 1.01 fl oz",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=8HrGVg5K9GI",
+    "ad_likelihood": 0.1,
+    "review": "This ampoule contains PDRN but lacks advanced penetration technology, having a thick texture; it offers a glowing finish and improves skin texture, yet may irritate sensitive skin or be drying for dry types."
+  },
+  {
+    "id": 59,
+    "asin": "B0DGG3MMJX",
+    "product_name": "COSRX 2% Alpha Arbutin Discoloration Care Serum, Dark Spot Care, 1.7 fl oz",
+    "youtuber_name": "디렉터 파이",
+    "video_url": "https://www.youtube.com/watch?v=V36MQZMqLNQ",
+    "ad_likelihood": 0.4,
+    "review": "Tested for acne-prone skin, this serum effectively soothes breakouts, minimizes scars, refines texture, and visibly brightens skin by tackling pigmentation with a powerful blend of ingredients including 5% Niacinamide."
+  },
+  {
+    "id": 60,
+    "asin": "B0FPFD1SDP",
+    "product_name": "Easydew DW-EGF Melatoning Ampoule 1X - Hydrating Dark Spot Serum with Niacinamide & Glutathione for Uneven Skin - Fast Absorbing Day & Night Ampoule Korean Skin Care (Pump 0.27 fl oz, EGF 1X)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=WlStLpZX3iM",
+    "ad_likelihood": 0.2,
+    "review": "Daewoong Pharmaceutical's DW-EGF ampoule is a cost-effective, daily-use serum with a rich texture, lauded for its superior efficacy over Vitamin C/Niacinamide in targeting blemishes and pigmentation for a glowing finish."
+  },
+  {
+    "id": 61,
+    "asin": "B0C7P7FG3T",
+    "product_name": "S Nature Aqua Squalane Moisturizing Cream 60ml+30ml For all skin types - by calli shop",
+    "youtuber_name": "INBORA인보라",
+    "video_url": "https://www.youtube.com/watch?v=JpFqq2_VxAE",
+    "ad_likelihood": 0.0,
+    "review": "This unique sheet mask acts like a non-slip patch applied over a full skincare routine, conveniently sealing in hydration without dripping."
+  },
+  {
+    "id": 62,
+    "asin": "B0DCBQYZP9",
+    "product_name": "SUNGBOON EDITOR Active Marine Astaxanthin Capsule Cream 50ml, Facial Cream for Brightening, Deep Hydration, Soothing, Moisturizer",
+    "youtuber_name": "림온 RIMON",
+    "video_url": "https://www.youtube.com/watch?v=BBi4GcZSkqc",
+    "ad_likelihood": 0.8,
+    "review": "This skin cream enhances natural clarity and brightness for a no-makeup look, notably resisting darkening or dulling over time."
+  },
+  {
+    "id": 63,
+    "asin": "B09YDCCJBJ",
+    "product_name": "AESTURA ATOBARRIER365 Cream with Ceramides, Korean Face Moisturizer for Barrier Repair | 120H lasting Hydration, Ceramide Capsules, Dry & Sensitive Skin, Non-comedogenic, 80 mL / 2.70 fl.oz.",
+    "youtuber_name": "림온 RIMON",
+    "video_url": "https://www.youtube.com/watch?v=2bmGYnbdoHo",
+    "ad_likelihood": 1.0,
+    "review": "The reviewer highly recommends Aestura Atobarrier 365 Cream, a clinic-trusted, ceramide-enriched formula, for its ability to soothe highly sensitive skin, reduce irritation, and deliver sustained hydration through comprehensive barrier care."
+  },
+  {
+    "id": 64,
+    "asin": "B08CMVXQ9W",
+    "product_name": "Anua Heartleaf 80 Soothing Ampoule, 1.01 fl.oz",
+    "youtuber_name": "조말랭Jomalraeng",
+    "video_url": "https://www.youtube.com/watch?v=lYiKtTNbot4",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer uses a few drops of a green, soothing ampoule as the first step in her skincare routine to condition and moisturize her skin before applying acne patches."
+  },
+  {
+    "id": 65,
+    "asin": "B0DHSBBTWM",
+    "product_name": "BRING GREEN Tea Tree Cica Soothing Toner Pads 90 Count, Exfoliating & Calming Facial Pads for Acne Prone Skin",
+    "youtuber_name": "조말랭Jomalraeng",
+    "video_url": "https://www.youtube.com/watch?v=QiRjBlbac4Q",
+    "ad_likelihood": 0.3,
+    "review": "This tea tree and cica-infused toner pad calms and cools irritated facial skin."
+  },
+  {
+    "id": 66,
+    "asin": "B08KQFTDH9",
+    "product_name": "d'alba Piedmont White Truffle Vital Spray Serum, Vegan Skin Care, Calming and Hydrating Facial Mist for Red and Sensitive Skin, Glow Serum, Surfactant Free, Korean Skin Care (3.38 fl oz.)",
+    "youtuber_name": "RISABAE",
+    "video_url": "https://www.youtube.com/watch?v=-PsHrRO2_lM",
+    "ad_likelihood": 0.4,
+    "review": "The d'Alba purple/pinkish spray serum is recommended for early anti-aging and wrinkle care due to its liposome content."
+  },
+  {
+    "id": 67,
+    "asin": "B0DFY92NDB",
+    "product_name": "CENTELLIAN 24 Madeca Cream Time Reverse, TECA Anti-Aging Moisturizer",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=Dfm4UhdbXSg",
+    "ad_likelihood": 1.0,
+    "review": "This popular Korean cream, featuring concentrated centella extract and liposomal technology, offers non-greasy hydration to soothe irritation, strengthen the skin barrier, and address redness, making it suitable for combination skin and conditions like rosacea."
+  },
+  {
+    "id": 68,
+    "asin": "B0FS7QVSVC",
+    "product_name": "CENTELLIAN 24 Expert Madeca Cream Active Renew PDRN, TECA, Firming",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=Dfm4UhdbXSg",
+    "ad_likelihood": 1.0,
+    "review": "This firming night cream, enriched with TECA, PDRN, and rose water, offers a non-greasy, comfortable feel while hydrating and smoothing skin for a healthier, more resilient appearance."
+  },
+  {
+    "id": 69,
+    "asin": "B0GL86CH4N",
+    "product_name": "CENTELLIAN 24 Madeca Derma Shield Vital Dewy Sunscreen - Hydrating, Firming",
+    "youtuber_name": "James Welsh",
+    "video_url": "https://www.youtube.com/watch?v=Dfm4UhdbXSg",
+    "ad_likelihood": 1.0,
+    "review": "This chemical sunscreen functions like a lightweight, quick-absorbing moisturizer, leaving no white cast, proving non-irritating for sensitive skin, and imparting a naturally hydrated, radiant finish that wears well under makeup."
+  },
+  {
+    "id": 70,
+    "asin": "B0FS7QVSVC",
+    "product_name": "CENTELLIAN 24 Expert Madeca Cream Active Renew PDRN, TECA, Firming",
+    "youtuber_name": "Beauty Within",
+    "video_url": "https://www.youtube.com/watch?v=s6B4o85k8og",
+    "ad_likelihood": 0.4,
+    "review": "An upgraded, lighter Madeca Cream, formulated with TECA and a multi-source PDRN complex, is praised for its silky, non-clogging texture and daily effectiveness in soothing redness, itchiness, and eczema on both face and body."
+  },
+  {
+    "id": 71,
+    "asin": "B0DFY92NDB",
+    "product_name": "CENTELLIAN 24 Madeca Cream Time Reverse, TECA Anti-Aging Moisturizer",
+    "youtuber_name": "Beauty Within",
+    "video_url": "https://www.youtube.com/watch?v=s6B4o85k8og",
+    "ad_likelihood": 0.1,
+    "review": "Centellian 24's rich Centella Asiatica barrier cream effectively treats dry winter skin and eczema but is often too heavy for oily complexions in warmer months."
+  },
+  {
+    "id": 72,
+    "asin": "B0G8ZXLJJY",
+    "product_name": "JUMISO D-Panthenol Barrier Soothing Cream D-Panthenol Barrier Soothing Serum Bundle",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=wpkqJ-QgIks",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer highly recommends this barrier cream for its exceptionally light, clear, and oil-free formula, making it ideal for oily or dehydrated skin but potentially too light for very dry complexions."
+  },
+  {
+    "id": 73,
+    "asin": "B07WZ2YTDP",
+    "product_name": "Torriden DIVE IN Hyaluronic Acid Serum for Deep Hydration | Korean K-Beauty Glass Skin Plump Glow | Lightweight Fast-Absorbing Face Serum 50ml (1.69 fl.oz.)",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=wpkqJ-QgIks",
+    "ad_likelihood": 0.2,
+    "review": "This daily hydrating ampoule is recommended for daily application of one to two layers under a moisturizing cream to replenish skin moisture."
+  },
+  {
+    "id": 74,
+    "asin": "B0F8QDXWKV",
+    "product_name": "Celladix Sebum Rebalancing Rx 131 Ampoule | Pore Clearing Serum | Tighten Enlarged Pores | Repair Skin Barrier | Rapid Soothing for Daily Use | Oily & Combination Skin| 1.01 Fl Oz",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=wpkqJ-QgIks",
+    "ad_likelihood": 0.3,
+    "review": "This ampoule is recommended for individuals with oily skin as it effectively controls substantial sebum production."
+  },
+  {
+    "id": 75,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "This exfoliating pad leverages chemical exfoliants to clear pores and refine skin texture, addressing issues like blackheads and whiteheads."
+  },
+  {
+    "id": 76,
+    "asin": "B07WZ2YTDP",
+    "product_name": "Torriden DIVE IN Hyaluronic Acid Serum for Deep Hydration | Korean K-Beauty Glass Skin Plump Glow | Lightweight Fast-Absorbing Face Serum 50ml (1.69 fl.oz.)",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "The updated Torriden serum offers a lightweight, fast-absorbing formula that leaves no sticky residue, making it ideal for parched skin."
+  },
+  {
+    "id": 77,
+    "asin": "B0GYRJ6VG6",
+    "product_name": "Abib Hyaluronic Boom Serum Water Drop, Expanding Nano-Sized Hyaluronic Acid, 20-Layer Deep Hydration, Plumping Glow Serum for Dry Sensitive Skin, Korean Skincare 1.69 fl oz 50ml",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "This lightweight serum absorbs instantly to provide quick, non-sticky hydration, making it ideal for busy mornings."
+  },
+  {
+    "id": 78,
+    "asin": "B0F8QDXWKV",
+    "product_name": "Celladix Sebum Rebalancing Rx 131 Ampoule | Pore Clearing Serum | Tighten Enlarged Pores | Repair Skin Barrier | Rapid Soothing for Daily Use | Oily & Combination Skin| 1.01 Fl Oz",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "This ampoule addresses concerns of oily, acne-prone, and dehydrated skin by regulating oil and reducing blemishes."
+  },
+  {
+    "id": 79,
+    "asin": "B0G8ZXLJJY",
+    "product_name": "JUMISO D-Panthenol Barrier Soothing Cream D-Panthenol Barrier Soothing Serum Bundle",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "This lightweight cream effectively hydrates and calms sensitive, compromised skin while restoring its natural barrier without a greasy feel."
+  },
+  {
+    "id": 80,
+    "asin": "B0GG8M37TD",
+    "product_name": "WELLAGE Real Hyaluronic Soothing Cream 100 2.7 oz., Moisturizer with PDRN",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=ce44CfYtZfg",
+    "ad_likelihood": 0.05,
+    "review": "A very light, soothing cream that quickly absorbs to deeply hydrate and relieve inner dryness without feeling heavy."
+  },
+  {
+    "id": 81,
+    "asin": "B0CZDMJZ1Q",
+    "product_name": "S.NATURE AQUA RICE CLEANSING OIL 200ml | Non-irritating, Hydrated, Rice Cleanser, Melting Blackhead, Daily Makeup Removal | 6.76Fl Oz",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=cL-ANU9otSg",
+    "ad_likelihood": 0.2,
+    "review": "Having used it extensively, the reviewer highlights this LHA cleansing oil's high effectiveness for daily managing sebum and dead skin cells, especially during summer."
+  },
+  {
+    "id": 82,
+    "asin": "B01CVXU3CI",
+    "product_name": "Abib Heartleaf Spot Pad Calming Touch 80pads 5.07 fl.oz. | Korean Acne Soothing Toner Pads for Face, Cleansing, Disposable, Exfoliant, Skin Care (Non-refillable)",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=cL-ANU9otSg",
+    "ad_likelihood": 0.1,
+    "review": "This toner pad calms the skin, gently exfoliates, and clarifies pores."
+  },
+  {
+    "id": 83,
+    "asin": "B0GG8M37TD",
+    "product_name": "WELLAGE Real Hyaluronic Soothing Cream 100 2.7 oz., Moisturizer with PDRN",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=cL-ANU9otSg",
+    "ad_likelihood": 0.2,
+    "review": "This review highlights a lightweight, soothing cream suitable for very oily skin, recommending thin application and thorough patting for optimal absorption."
+  },
+  {
+    "id": 84,
+    "asin": "B0FPLYCS8D",
+    "product_name": "JUMISO 10% Niacinamide Dark Spot Serum for Uneven Tone, 1.01 fl oz",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=cL-ANU9otSg",
+    "ad_likelihood": 0.2,
+    "review": "The niacinamide serum offers a quickly absorbing, weightless, and non-tacky feel that leaves no trace on the skin."
+  },
+  {
+    "id": 85,
+    "asin": "B0D28H1JYD",
+    "product_name": "ROVECTIN Pore Care No-Sebum Pad for Sebum Clearing and Pore Clearing with Green Fruit Complex, Gentle Exfoliating Pads - 60 Pads",
+    "youtuber_name": "스칼렛 언니",
+    "video_url": "https://www.youtube.com/watch?v=WD7cc56oBoc",
+    "ad_likelihood": 0.3,
+    "review": "These oil-control pads reduce facial shine and improve makeup longevity when applied before cosmetics, offered in both jars and individual sachets."
+  },
+  {
+    "id": 86,
+    "asin": "B0GQXRWS4J",
+    "product_name": "GOODAL Heartleaf Soothing Moisture Sunscreen, Broad Spectrum SPF 50, Hydrating Korean Face Sunscreen, No White Cast, Lightweight Dewy Finish, Reef-Friendly, Vegan, Korean Skincare, 1.69 Fl Oz",
+    "youtuber_name": "스칼렛 언니",
+    "video_url": "https://www.youtube.com/watch?v=UxQ2Ew9G8tg",
+    "ad_likelihood": 0.3,
+    "review": "This moisturizing sunscreen provides strong UV protection for oily skin, creating a non-greasy base that helps makeup adhere well."
+  },
+  {
+    "id": 87,
+    "asin": "B0BK46789V",
+    "product_name": "Marshique Frown Line Patches for Between the Eyes, Anti-Wrinkle Face Tape for Eleven Lines, Crow's Feet, Smile Lines, Day & Night Use, Korean Skincare, 60 Patches",
+    "youtuber_name": "스칼렛 언니",
+    "video_url": "https://www.youtube.com/watch?v=dhqjWTP3SFw",
+    "ad_likelihood": 0.2,
+    "review": "This overnight patch, containing Adenosine, physically flattens skin to prevent frown lines and sleep creases, but requires applying face cream first to minimize adhesive irritation."
+  },
+  {
+    "id": 88,
+    "asin": "B0CRKPZ9PQ",
+    "product_name": "VT COSMETICS PDRN 100 Essence, Intensive Glow Serum, 1.01 fl. Oz.",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=LApoNEQZIyw",
+    "ad_likelihood": 0.0,
+    "review": "The VT PDRN essence is criticized for its high concentration of pore-clogging Isopropyl Myristate, which could worsen with enhanced absorption, and its misleadingly advertised yet functionally negligible PDRN content."
+  },
+  {
+    "id": 89,
+    "asin": "B0C61FD7P9",
+    "product_name": "numbuzin No.5 Vitamin Concentrated Serum, Dark Spot Care, Glutathione & Vitamin Serum, Korean Skincare, Tranexamic Acid 4%, Niacinamide 5%, for a Radiant-Looking Glow 1.01 fl oz",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "This acclaimed serum combines a 5% concentration of niacinamide, 4% tranexamic acid for an improved complexion, and 5% panthenol to combat dryness and fortify the skin's barrier."
+  },
+  {
+    "id": 90,
+    "asin": "B0BGHY6D2X",
+    "product_name": "innisfree Retinol Cica Serum with Salicylic Acid | Korean Moisture Recovery Treatment with Hyaluronic Acid for Hydrating Face Care | Suitable for Beginners and Acne-Prone Skin",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "This gentle retinol ampoule is suitable for novice users or those with delicate skin, featuring a minimal concentration to prevent irritation."
+  },
+  {
+    "id": 91,
+    "asin": "B0GKCPDTRB",
+    "product_name": "IOPE Expert Retinol RX 2% Reti-Jection Serum - Anti-Aging Night Serum - Visibly Smooths Wrinkles, Firms Skin, and Refines Pores - Potent & Gentle - 1.01 fl. oz.",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "This advanced retinol serum, designed for experienced users, features a low pure retinol concentration yet utilizes spicules to boost absorption, which may increase skin irritation."
+  },
+  {
+    "id": 92,
+    "asin": "B09YDCCJBJ",
+    "product_name": "AESTURA ATOBARRIER365 Cream with Ceramides, Korean Face Moisturizer for Barrier Repair | 120H lasting Hydration, Ceramide Capsules, Dry & Sensitive Skin, Non-comedogenic, 80 mL / 2.70 fl.oz.",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "Harnessing ceramides, cholesterol, and fatty acids, this barrier cream is suitable for dry skin to rebuild and safeguard its epidermal barrier."
+  },
+  {
+    "id": 93,
+    "asin": "B09YDCCJBJ",
+    "product_name": "AESTURA ATOBARRIER365 Cream with Ceramides, Korean Face Moisturizer for Barrier Repair | 120H lasting Hydration, Ceramide Capsules, Dry & Sensitive Skin, Non-comedogenic, 80 mL / 2.70 fl.oz.",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "This lightweight barrier cream restores the skin barrier for oily skin types without feeling heavy or greasy."
+  },
+  {
+    "id": 94,
+    "asin": "B06XWHLZMD",
+    "product_name": "ZEROID Soothing Cream, 2.7 fl oz (80ml)",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "A lightweight, calming cream designed for oily skin, it helps restore the skin's protective barrier."
+  },
+  {
+    "id": 95,
+    "asin": "B0CSYKK1XQ",
+    "product_name": "DERMATORY HYAL SHOT BARRIER AMPOULE B5 (50ml)",
+    "youtuber_name": "솔직한 의사 파크",
+    "video_url": "https://www.youtube.com/watch?v=9LU5opX_0pg",
+    "ad_likelihood": 0.0,
+    "review": "This hyaluronic acid ampoule effectively alleviates inner dryness and boasts a pleasant texture, but sensitive users should patch test due to its fragrance content."
+  },
+  {
+    "id": 96,
+    "asin": "B0BGHY6D2X",
+    "product_name": "innisfree Retinol Cica Serum with Salicylic Acid | Korean Moisture Recovery Treatment with Hyaluronic Acid for Hydrating Face Care | Suitable for Beginners and Acne-Prone Skin",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=Z2cibQM8y2w",
+    "ad_likelihood": 1.0,
+    "review": "This gentle retinol cica ampoule, designed for oily skin and beginners, effectively treats pores and blemishes while soothing skin, featuring an upgraded retinol concentration and clinically proven results."
+  },
+  {
+    "id": 97,
+    "asin": "B08TBJY2DP",
+    "product_name": "Torriden DIVE IN Hyaluronic Acid Facial Mask (10 sheets) | Deep Hydration Korean Face Sheet Mask | Panthenol & Allantoin | Korean Skincare Mask",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=02PTaI6gjn8",
+    "ad_likelihood": 0.3,
+    "review": "The reviewer recommends this gel mask for its effectiveness in cooling and soothing summer skin irritation, highlighting its superior moisture retention and texture benefits over traditional sheet masks."
+  },
+  {
+    "id": 98,
+    "asin": "B0B5D7L3XC",
+    "product_name": "MAKE P:REM INTECA Soothing Cream, Advanced CICA Cream, 2.70 fl.oz. (80mL)",
+    "youtuber_name": "INBORA인보라",
+    "video_url": "https://www.youtube.com/watch?v=VLj54BNYEmA",
+    "ad_likelihood": 0.4,
+    "review": "This soothing, lightweight, and deeply hydrating cream is highlighted as a summer favorite, balancing skin to ensure makeup adheres perfectly without a heavy feel."
+  },
+  {
+    "id": 99,
+    "asin": "B0GQXRWS4J",
+    "product_name": "GOODAL Heartleaf Soothing Moisture Sunscreen, Broad Spectrum SPF 50, Hydrating Korean Face Sunscreen, No White Cast, Lightweight Dewy Finish, Reef-Friendly, Vegan, Korean Skincare, 1.69 Fl Oz",
+    "youtuber_name": "INBORA인보라",
+    "video_url": "https://www.youtube.com/watch?v=VLj54BNYEmA",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer recommends a hydrating and calming moisture sun cream as a year-round daily essential, consistently applying it unless strictly remaining indoors."
+  },
+  {
+    "id": 100,
+    "asin": "B0F6NMVZBD",
+    "product_name": "belif Aqua Bomb Frozen Gel Cream - Cooling Relief with Panthenol & Niacinamide - Daily Soothing & Hydrating Moisturizer, Lightweight, Korean Skincare, 1.69 fl oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=9H3WTNjO7Xg",
+    "ad_likelihood": 0.8,
+    "review": "This gel-capsule cream provides intense hydration and a burst of moisture, touting an instant -6.05°C cooling effect and preferred hygienic tube packaging."
+  },
+  {
+    "id": 101,
+    "asin": "B0GTXV3BY2",
+    "product_name": "Beauty of Joseon Pore Firming Serum Red Bean PDRN™ + Peptide | Daily Korean Skincare for Large Pores, Refining, Smoothing, and Plumping 30ml, 1.fl.oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=9H3WTNjO7Xg",
+    "ad_likelihood": 0.8,
+    "review": "This serum enhances skin elasticity and tightens pores with ingredients like red bean-derived PDRN and vegan peptides."
+  },
+  {
+    "id": 102,
+    "asin": "B0GMWQYL4V",
+    "product_name": "SUNGBOON EDITOR Green Tomato NMN Pore Minimizing Ampoule, Firming Pore Minimizer Serum with NMN, Niacinamide & Green Tomato Extract, Lightweight Korean Skincare for Sensitive Skin, 1.35 Fl Oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=9H3WTNjO7Xg",
+    "ad_likelihood": 0.8,
+    "review": "A pore-tightening ampoule, featuring green tomato extract and NMN, was launched as part of a Winnie the Pooh collaboration kit."
+  },
+  {
+    "id": 103,
+    "asin": "B0H29FGVWR",
+    "product_name": "Abso Trouble BIOME Care Mist Toner, Touchless Facial Balance Spray for Breakout Control & Redness Relief, Sebum Reducing Face Mist for Blemish-Prone Skin, Korean Skincare, 6.76 fl oz / 200ml",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.3,
+    "review": "This antibacterial spray toner for acne-prone skin delivers deep, clean-feeling hydration to the face, neck, and body, suitable for morning and night application."
+  },
+  {
+    "id": 104,
+    "asin": "B0C9Q339RT",
+    "product_name": "BRING GREEN Tea Tree CICA Soothing Toner | Mild Daily Skincare Routine for Cooling and Hydrating Effect (8.5 Fl. Oz., 250ml)",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.1,
+    "review": "This affordable toner offers a lightweight, refreshing feel, often includes a spray bottle for convenient face and body application, and is particularly recommended for summer."
+  },
+  {
+    "id": 105,
+    "asin": "B0CZKZNM85",
+    "product_name": "CNP Active Boost 1:1 Ampule with PDRN, 1.01 fl.oz.",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.1,
+    "review": "This heavy, nourishing ampoule effectively treats internal skin dryness, making it suitable for winter but potentially too dense for summer."
+  },
+  {
+    "id": 106,
+    "asin": "B0GMRSG6YF",
+    "product_name": "IOPE XMD Stem III Clinical Recovery Serum - Professional PDRN Treatment-Level Results - Visibly Firms, Plumps Volume, and Refines Pores - With Hyaluronic Acid - 1.01 fl. oz.",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.1,
+    "review": "A review highlights a rich, nourishing recovery serum, ideal for winter, presenting its anti-aging and skin barrier recovery benefits as clinically proven and comparable to professional dermatological treatments."
+  },
+  {
+    "id": 107,
+    "asin": "B0CKVLPFVY",
+    "product_name": "BRING GREEN ZINC TECA Serum with Niacinamide | Soothing Face Serum for Sensitive Skin, Pore Minimizing & Hydrating | Korean Skincare for Breakouts & Uneven Texture",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.2,
+    "review": "This overnight serum effectively soothes skin and visibly reduces breakouts and redness."
+  },
+  {
+    "id": 108,
+    "asin": "B0DT6WJYLD",
+    "product_name": "Le' Nubele Azulene Cica Special Barrier Soother Mask Serum for Irritated Skin | Azulene Cica + Ceramide + PDRN + Peptide | Barrier Repair, Hydrating, Redness Calming, Korean Skincare | 50ml•1.69fl.oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.3,
+    "review": "The reviewer highly recommends this premium Azulene ampoule for its effective formulation, which delivers significant hydration and improved skin firmness despite its high cost."
+  },
+  {
+    "id": 109,
+    "asin": "B0D9GPCTW7",
+    "product_name": "EASYDEW Barrier Repair Mask - Intense Moisture-Rich Face Mask with Revitalizing Cream Essence for Lasting Hydration with EGF Peptide, Ceramides, Hyaluronic Acid, 4 Sheets",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=QM5PvbUtm00",
+    "ad_likelihood": 0.2,
+    "review": "This sheet mask is designed for compromised skin recovery, providing deep nourishment comparable to a rich cream, though it may feel heavy in warmer weather."
+  },
+  {
+    "id": 110,
+    "asin": "B0CF58C3J6",
+    "product_name": "HEVEBLUE Salmon Caring Centella Bubble Cleanser - Salmon PDRN, pH 5.5, Salmon Egg Extract, Centella, Moisturizing, Balancing, Pore Cleansing, Low Irritation, Hypoallergenic, Sensitive Skin",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=-udYce6Fpj8",
+    "ad_likelihood": 0.1,
+    "review": "This reviewer endorses a repurchased, gentle, self-foaming bubble cleanser for its non-irritating effectiveness on both face and body."
+  },
+  {
+    "id": 111,
+    "asin": "B0GK11JYNC",
+    "product_name": "DearKlairs EGF Serum - Blue Youth Activating Drop, 1.69 Fl Oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=LuRDtwsK6jc",
+    "ad_likelihood": 0.0,
+    "review": "This lightweight, non-greasy ampoule, formulated with guaiazulene and EGF peptides, effectively soothes and regenerates skin, making it an excellent introductory option for oily, acne-prone, or inflamed complexions."
+  },
+  {
+    "id": 112,
+    "asin": "B0DT6WJYLD",
+    "product_name": "Le' Nubele Azulene Cica Special Barrier Soother Mask Serum for Irritated Skin | Azulene Cica + Ceramide + PDRN + Peptide | Barrier Repair, Hydrating, Redness Calming, Korean Skincare | 50ml•1.69fl.oz",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=LuRDtwsK6jc",
+    "ad_likelihood": 0.1,
+    "review": "The reviewer highly recommends this premium 50ml serum for its effective soothing and texture improvement, noting its smooth feel and potent ingredients, with its high price being the sole drawback."
+  },
+  {
+    "id": 113,
+    "asin": "B0FSRJVF9P",
+    "product_name": "MAMONDE Calming Shot Blue Chamomile Azulene Facial Serum | Soothing, Lightweight Korean Skincare Serum For Sensitive Skin with Niacinamide | Calm Visible Redness | Suitable for Acne Prone Skin",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=LuRDtwsK6jc",
+    "ad_likelihood": 0.0,
+    "review": "This 50ml ampoule, priced around 21,600-24,000 KRW, contains high niacinamide for brightening and sebum control with a low guaiazulene content, offering a lightweight, cooling texture and recommended as a base for enhancing soothing effects with other azulene solutions."
+  },
+  {
+    "id": 114,
+    "asin": "B0C7P7FG3T",
+    "product_name": "S Nature Aqua Squalane Moisturizing Cream 60ml+30ml For all skin types - by calli shop",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=dAwHBisLGXo",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer uses this cream as part of a simplified skincare regimen, having switched from potent formulas to gentle, hydrating, and calming products to prevent acne breakouts."
+  },
+  {
+    "id": 115,
+    "asin": "B0H29FGVWR",
+    "product_name": "Abso Trouble BIOME Care Mist Toner, Touchless Facial Balance Spray for Breakout Control & Redness Relief, Sebum Reducing Face Mist for Blemish-Prone Skin, Korean Skincare, 6.76 fl oz / 200ml",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=mLG87eMPSR4",
+    "ad_likelihood": 0.7,
+    "review": "The reviewer highly recommends a spray-on mist toner, citing its convenience and consistent effectiveness in maintaining stable, blemish-free skin through prolonged personal use."
+  },
+  {
+    "id": 116,
+    "asin": "B0H29FGVWR",
+    "product_name": "Abso Trouble BIOME Care Mist Toner, Touchless Facial Balance Spray for Breakout Control & Redness Relief, Sebum Reducing Face Mist for Blemish-Prone Skin, Korean Skincare, 6.76 fl oz / 200ml",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=dAwHBisLGXo",
+    "ad_likelihood": 0.7,
+    "review": "Having nearly completed a bottle, the reviewer expresses high satisfaction with this mist toner, applying it to her face and body for its effectiveness in preventing acne."
+  },
+  {
+    "id": 117,
+    "asin": "B09V7Z4TJG",
+    "product_name": "medicube Toner Pads Zero Pore Pad 2.0 for Exfoliation and Pore Care",
+    "youtuber_name": "최종시안",
+    "video_url": "https://www.youtube.com/watch?v=XdWu7y5QebQ",
+    "ad_likelihood": 0.1,
+    "review": "The creator considers pore pads a summer skincare essential for cooling her face and reducing morning puffiness, applying them to facial areas before makeup."
+  },
+  {
+    "id": 118,
+    "asin": "B0H5K39GHN",
+    "product_name": "HEVEBLUE Derma Zinc Matcha MX 800K Ampoule",
+    "youtuber_name": "최종시안",
+    "video_url": "https://www.youtube.com/watch?v=XdWu7y5QebQ",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer praises this ampoule for consistently balancing oil and moisture, controlling sebum, strengthening the skin barrier, and significantly reducing breakouts."
+  },
+  {
+    "id": 119,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=uGhJxcF8jsA",
+    "ad_likelihood": 0.3,
+    "review": "This potent exfoliating pad is highly effective for improving skin texture and clearing common blemishes such as blackheads, whiteheads, and dead skin."
+  },
+  {
+    "id": 120,
+    "asin": "B09C29LSCY",
+    "product_name": "SKIN1004 Madagascar Centella Tone Brightening Capsule Ampoule 3.38 fl.oz(100ml) | Calming Moisturizing Brightening | Sensitive Skin",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=P5mJOa_AAHs",
+    "ad_likelihood": 0.2,
+    "review": "The $5 travel-size brightening ampoule is a gentle, lightweight serum that targets dark spots and hyperpigmentation, particularly beneficial for oily skin and compatible with salicylic acid."
+  },
+  {
+    "id": 121,
+    "asin": "B0FS7QVSVC",
+    "product_name": "CENTELLIAN 24 Expert Madeca Cream Active Renew PDRN, TECA, Firming",
+    "youtuber_name": "Beauty Within",
+    "video_url": "https://www.youtube.com/watch?v=gO6G0DzLIb0",
+    "ad_likelihood": 0.1,
+    "review": "The reviewed PDRN facial cream is a nourishing and calming moisturizer the creator applies sparingly morning and night."
+  },
+  {
+    "id": 122,
+    "asin": "B0DHSBBTWM",
+    "product_name": "BRING GREEN Tea Tree Cica Soothing Toner Pads 90 Count, Exfoliating & Calming Facial Pads for Acne Prone Skin",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=8RrM_QLDjN4",
+    "ad_likelihood": 1.0,
+    "review": "These textured toner pads are saturated with soothing essence, providing comfortable, non-stuffy adherence for quick cooling and calming, and can enhance a Cica Cream routine."
+  },
+  {
+    "id": 123,
+    "asin": "B0C9Q339RT",
+    "product_name": "BRING GREEN Tea Tree CICA Soothing Toner | Mild Daily Skincare Routine for Cooling and Hydrating Effect (8.5 Fl. Oz., 250ml)",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=8RrM_QLDjN4",
+    "ad_likelihood": 1.0,
+    "review": "This lightweight, watery soothing toner offers a skin-cooling effect ideal for summer sebum and heat management, and can be applied as a mist, pack, or mask ingredient."
+  },
+  {
+    "id": 124,
+    "asin": "B0CFVX9R9N",
+    "product_name": "BRING GREEN Tea Tree Cica Soothing Cream Plus 100ml Korean Skin care, calming and soothing, moisturizer for skin, facial cream, trouble care, Blackhead Removing Pore care (Pack of 1)",
+    "youtuber_name": "Arang 아랑",
+    "video_url": "https://www.youtube.com/watch?v=8RrM_QLDjN4",
+    "ad_likelihood": 1.0,
+    "review": "This soothing cream effectively balances skin's oil and moisture, offers a light feel and gentle cooling, and can also be used as a deeply hydrating mask by applying a thick layer with a spatula under a wet sheet."
+  },
+  {
+    "id": 125,
+    "asin": "B09YDCCJBJ",
+    "product_name": "AESTURA ATOBARRIER365 Cream with Ceramides, Korean Face Moisturizer for Barrier Repair | 120H lasting Hydration, Ceramide Capsules, Dry & Sensitive Skin, Non-comedogenic, 80 mL / 2.70 fl.oz.",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=cazSVlE5_OI",
+    "ad_likelihood": 0.1,
+    "review": "Hyram highly recommends this moisturizer, calling it a top repurchase and one of the best he's used due to its effective, science-backed barrier-repair formula."
+  },
+  {
+    "id": 126,
+    "asin": "B077RTL1HJ",
+    "product_name": "Illiyoon Ceramide Ato Concentrate Cream | Moisturizer for Dry & Sensitive Skin, 100hr Lasting Hydration, For Face & Body, Gentle for Infants, Moisture Barrier Repair, Vegan Certified, 6.76 fl.oz.",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=cazSVlE5_OI",
+    "ad_likelihood": 0.1,
+    "review": "Hyram enthusiastically endorses this ceramide cream for its affordability and effectiveness, particularly for eczema, calling it a superior alternative to CeraVe."
+  },
+  {
+    "id": 127,
+    "asin": "B0C73C2K95",
+    "product_name": "ETUDE SoonJung 2x Barrier Intensive Cream Light Texture | Vegan Korean Face Moisturizer for Sensitive Skin, Day & Night Cream, Barrier Cream with Panthenol (2.02 fl oz)",
+    "youtuber_name": "Hyram",
+    "video_url": "https://www.youtube.com/watch?v=cazSVlE5_OI",
+    "ad_likelihood": 0.1,
+    "review": "Hyram praises a Korean cream as an excellent, popular choice for repairing damaged skin barriers, soothing eczema, and alleviating severe dryness."
+  },
+  {
+    "id": 128,
+    "asin": "B0BGHY6D2X",
+    "product_name": "innisfree Retinol Cica Serum with Salicylic Acid | Korean Moisture Recovery Treatment with Hyaluronic Acid for Hydrating Face Care | Suitable for Beginners and Acne-Prone Skin",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "Ideal for beginners and dry skin, this gentle retinol ampoule refines texture to a \"peeled egg\" finish while providing ample hydration."
+  },
+  {
+    "id": 129,
+    "asin": "B0F7XCVFX1",
+    "product_name": "Dr.Different VITALIFT-A Fortessimo Retinal 0.15%, Intensive Anti-Aging Cream for Wrinkle Reduction, Skin Elasticity, Lifting, Firming with Vita A, K-Skincare made by Korean Dermatologist. (1.06oz)",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "An advanced anti-aging cream featuring 0.15% retinal, it promotes skin turnover, pore refinement, and elasticity, requiring a pea-sized nightly application and caution against use on a compromised skin barrier."
+  },
+  {
+    "id": 130,
+    "asin": "B0FSPVHZ1N",
+    "product_name": "MAMONDE Flora Glow Rose Daily Liquid Face Mask | 2-in-1 Toner & Exfoliator | Korean Leave-On Mask with Hyaluronic Acid, Peptides & 10% PHA For Glass Skin | Korean Skin Care | Makeup Prep",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.1,
+    "review": "This liquid mask and serum effectively hydrates and gently exfoliates with PHA and hyaluronic acid, preparing skin for makeup, though it may feel heavy or sticky in hot weather even for dry skin."
+  },
+  {
+    "id": 131,
+    "asin": "B0C61FD7P9",
+    "product_name": "numbuzin No.5 Vitamin Concentrated Serum, Dark Spot Care, Glutathione & Vitamin Serum, Korean Skincare, Tranexamic Acid 4%, Niacinamide 5%, for a Radiant-Looking Glow 1.01 fl oz",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This hydrating serum, formulated with Niacinamide, Vitamin C, and Tranexamic Acid, effectively targets blemish scars while providing substantial moisture beneficial for dry skin."
+  },
+  {
+    "id": 132,
+    "asin": "B09MN7P3RC",
+    "product_name": "DERMA FACTORY Niacinamide 20% Face Serum for Oily Skin, Pore Care",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.1,
+    "review": "This affordable, high-concentration 20% Niacinamide serum, potentially irritating for the face, is recommended for body use to alleviate sunburns and tanning."
+  },
+  {
+    "id": 133,
+    "asin": "B0DGG3MMJX",
+    "product_name": "COSRX 2% Alpha Arbutin Discoloration Care Serum, Dark Spot Care, 1.7 fl oz",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This lightweight serum, formulated with Niacinamide, Alpha-Arbutin, and Tranexamic Acid, successfully diminishes skin discoloration and dark spots, providing a less oily option compared to the Numbuzin No. 5+ serum."
+  },
+  {
+    "id": 134,
+    "asin": "B0GMRSG6YF",
+    "product_name": "IOPE XMD Stem III Clinical Recovery Serum - Professional PDRN Treatment-Level Results - Visibly Firms, Plumps Volume, and Refines Pores - With Hyaluronic Acid - 1.01 fl. oz.",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This liposome-formulated ampoule provides profound hydration to mitigate internal dryness, resulting in a luminous complexion, and is recommended for anti-aging skincare from the age of thirty onwards."
+  },
+  {
+    "id": 135,
+    "asin": "B0CZKZNM85",
+    "product_name": "CNP Active Boost 1:1 Ampule with PDRN, 1.01 fl.oz.",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This ampoule improves skin elasticity and barrier function, providing a radiant, lightweight finish suitable for diverse skin types, including oily and dry, particularly for those over 30."
+  },
+  {
+    "id": 136,
+    "asin": "B0GJZ94R1C",
+    "product_name": "ISNTREE Onion Newpair Ampoule Plus 50ml 1.69 fl.oz – Uneven Skin Tone Care | Hydrating & Soothing Ampoule | Red Onion Extract & Niacinamide | Lightweight Watery Texture | Korean Skincare",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This affordable Daiso ampoule provides surprisingly effective hydration without a strong scent, and its durable plastic packaging is convenient for travel."
+  },
+  {
+    "id": 137,
+    "asin": "B0DLB58CWR",
+    "product_name": "Anua PDRN Hyaluronic Acid Capsule 100 Serum, 1.01 fl.oz",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "A reviewer highly recommends a watery, deeply hydrating serum, noting its effective skin-plumping hyaluronic acid benefits despite a negligible PDRN content."
+  },
+  {
+    "id": 138,
+    "asin": "B01CVXU3CI",
+    "product_name": "Abib Heartleaf Spot Pad Calming Touch 80pads 5.07 fl.oz. | Korean Acne Soothing Toner Pads for Face, Cleansing, Disposable, Exfoliant, Skin Care (Non-refillable)",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "The heartleaf essence toner pad effectively calms redness and irritation while cooling the skin, also serving as a rapid emergency mask."
+  },
+  {
+    "id": 139,
+    "asin": "B0F7R5121V",
+    "product_name": "DERMATORY Salicinic Pore Clear Black Pad for Pore Refining with BHA Salicylic Acid, Infused with 5% Charcoal (in fabric only), Facial Exfoliant for Blackheads, Dual-Textured, Korean Skin Care",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This dual-sided exfoliating pad effectively cleanses pores and refines skin texture, recommended 1-2 times weekly for oily skin, especially during summer."
+  },
+  {
+    "id": 140,
+    "asin": "B0DB87LZFZ",
+    "product_name": "UIQ Biome Remedy Pore Reset Pad, Niacinamide, Refine, 80pcs, 180ml/6.08oz",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This tearable rectangular facial pad offers an intense, tingly cooling sensation designed for rapid skin temperature reduction."
+  },
+  {
+    "id": 141,
+    "asin": "B0F6NMVZBD",
+    "product_name": "belif Aqua Bomb Frozen Gel Cream - Cooling Relief with Panthenol & Niacinamide - Daily Soothing & Hydrating Moisturizer, Lightweight, Korean Skincare, 1.69 fl oz",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This cooling and intensely hydrating gel-cream is recommended as a summer essential that lowers skin temperature and creates a smooth base for makeup application."
+  },
+  {
+    "id": 142,
+    "asin": "B0BYYPN8Y9",
+    "product_name": "Cell Fusion C Post Alpha Cooling Pad – Hydrating & Cooling Korean Toner Pads | Panthenol & Glacier Water | Hydrating, Depuffing, Pore Care | 70 Pads / 6.08 fl.oz.",
+    "youtuber_name": "리피",
+    "video_url": "https://www.youtube.com/watch?v=awnKeV58LpU",
+    "ad_likelihood": 0.2,
+    "review": "This highly adhesive cooling pad gently reduces morning skin temperature, creating an optimal surface for makeup application."
+  },
+  {
+    "id": 143,
+    "asin": "B07WZ2YTDP",
+    "product_name": "Torriden DIVE IN Hyaluronic Acid Serum for Deep Hydration | Korean K-Beauty Glass Skin Plump Glow | Lightweight Fast-Absorbing Face Serum 50ml (1.69 fl.oz.)",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.1,
+    "review": "This Olive Young top-ranked low-molecular hyaluronic acid serum deeply hydrates with an unscented, intermediate texture that absorbs cleanly, offering good value despite potentially feeling heavy for oily skin during warm weather."
+  },
+  {
+    "id": 144,
+    "asin": "B0GGGCV238",
+    "product_name": "GOODAL Vitamin C Dark spot brightening Serum | 5% Niacinamide & Green Tangerine Exosome | Gentle Daily Facial Serum for Radiant Glow Skin | Korean Skincare | 1.01 fl oz (30ml)",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer highly recommends this affordable, gentle, and quickly absorbed Vitamin C serum as an excellent entry-level option for brightening and dark spot care, noting its pleasant citrus scent."
+  },
+  {
+    "id": 145,
+    "asin": "B0DLB58CWR",
+    "product_name": "Anua PDRN Hyaluronic Acid Capsule 100 Serum, 1.01 fl.oz",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.0,
+    "review": "While this celebrity-backed serum provides decent basic hydration, the reviewer ultimately rejects it as overpriced and lacking value compared to more effective, cheaper alternatives."
+  },
+  {
+    "id": 146,
+    "asin": "B0GS1DYZHG",
+    "product_name": "SUNGBOON EDITOR Glow Intensive Deep Collagen Silk Peptide EGF Ampoule, Copper Peptides Serum for Face with Multi Peptides, Hydrating Korean Skincare Facial Serum for Smooth-Looking Skin, 1.35 fl oz",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.1,
+    "review": "Despite its anti-aging peptides and visible gold threads, this ampoule is criticized for its inconvenient syringe delivery system, potential hygiene issues, and lack of dramatic lifting effects, leading to a recommendation to buy only when discounted."
+  },
+  {
+    "id": 147,
+    "asin": "B0D62M93QY",
+    "product_name": "MEDIHEAL Madecassoside Repair Serum, Blemish Care & Hydration (1.35 fl.oz)",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.2,
+    "review": "A reviewer enthusiastically recommends a cost-effective Mediheal serum, formulated with madecassoside, niacinamide, and centella asiatica, for its effective ability to soothe, moisturize, and regenerate irritated or post-treatment skin."
+  },
+  {
+    "id": 148,
+    "asin": "B0CKVLPFVY",
+    "product_name": "BRING GREEN ZINC TECA Serum with Niacinamide | Soothing Face Serum for Sensitive Skin, Pore Minimizing & Hydrating | Korean Skincare for Breakouts & Uneven Texture",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.2,
+    "review": "The reviewer highly recommends this serum for its quick effectiveness in soothing acne, though its high cost suggests purchasing it on sale."
+  },
+  {
+    "id": 149,
+    "asin": "B0BGHY6D2X",
+    "product_name": "innisfree Retinol Cica Serum with Salicylic Acid | Korean Moisture Recovery Treatment with Hyaluronic Acid for Hydrating Face Care | Suitable for Beginners and Acne-Prone Skin",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=IAyfRZW9D9s",
+    "ad_likelihood": 0.2,
+    "review": "This anti-aging ampoule, blending a low concentration of retinol with cica, is a gentle, hydrating option ideal for beginners, offering long-term value despite its initial cost."
+  },
+  {
+    "id": 150,
+    "asin": "B0793KTZS7",
+    "product_name": "ZEROID Foaming Cleanser, 8.1 fl oz (240ml)",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=h7nJBDl1Q1k",
+    "ad_likelihood": 0.1,
+    "review": "Praised as a gentle daily cleanser, this product avoids leaving skin feeling taut or parched after washing."
+  },
+  {
+    "id": 151,
+    "asin": "B0DRBKTCL1",
+    "product_name": "beplain Mung Bean pH-Balanced Cleansing Foam for Sensitive Skin, 5.4 fl oz",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=h7nJBDl1Q1k",
+    "ad_likelihood": 0.1,
+    "review": "This mung bean-infused product is recommended for oily complexions to effectively cleanse away excess oil and skin impurities."
+  },
+  {
+    "id": 152,
+    "asin": "B0GGGCV238",
+    "product_name": "GOODAL Vitamin C Dark spot brightening Serum | 5% Niacinamide & Green Tangerine Exosome | Gentle Daily Facial Serum for Radiant Glow Skin | Korean Skincare | 1.01 fl oz (30ml)",
+    "youtuber_name": "닥터블랑_예뻐지는비결",
+    "video_url": "https://www.youtube.com/watch?v=FAjIWh4Yaec",
+    "ad_likelihood": 0.1,
+    "review": "Priced at 28,000 KRW for 30ml, this mild Vitamin C serum is recommended for beginners, praised for its gentle, non-stinging, cooling, and easily spreadable nature that enabled the reviewer to comfortably finish a bottle."
+  },
+  {
+    "id": 153,
+    "asin": "B0DJ4J8661",
+    "product_name": "ROUND LAB Pine Calming Cica Toner 8.45 Fl Oz, Low-Acidic Hydrating Toner for Face with Pine Cica, BHA + LHA, and Hyaluronic Acid for Soothing, Exfoliating, and Restoring Skin Balance, Korean Skincare",
+    "youtuber_name": "올리브영 추천템 | 올영깡🐥",
+    "video_url": "https://www.youtube.com/watch?v=uL54Duske8U",
+    "ad_likelihood": 0.1,
+    "review": "This moisturizing toner earned a 9/10 rating for its strong performance in aiding the absorption of subsequent skincare products compared to other toners."
+  },
+  {
+    "id": 154,
+    "asin": "B0BQTHDZY1",
+    "product_name": "numbuzin No.1 Toner | Pure-Full Calming Herb Toner | Breakouts, Redness, Excess Oil Control | Centella Asiatica, Heartleaf, Licorice Root | Acne-Prone, Sensitive Skin | 10.14 fl. oz.",
+    "youtuber_name": "올리브영 추천템 | 올영깡🐥",
+    "video_url": "https://www.youtube.com/watch?v=uL54Duske8U",
+    "ad_likelihood": 0.3,
+    "review": "The product earned a perfect score, ranking among the top three moisturizing toners for improving subsequent skincare absorption."
+  },
+  {
+    "id": 155,
+    "asin": "B0B1PG337B",
+    "product_name": "S.NATURE Aqua Oasis Toner | PHA, Soothing and Calming Skin,Hydrating, Refreshing Toner for All Skin Types, Korean Skin Care, Vegan | 300ml, 10.14 Fl Oz",
+    "youtuber_name": "올리브영 추천템 | 올영깡🐥",
+    "video_url": "https://www.youtube.com/watch?v=uL54Duske8U",
+    "ad_likelihood": 0.3,
+    "review": "Achieving a perfect 10/10 rating, this moisturizing toner was selected as one of the three best in its category for effectively aiding the absorption of other skincare steps."
+  },
+  {
+    "id": 156,
+    "asin": "B08CMS8P67",
+    "product_name": "Anua Heartleaf 77 Soothing Toner, 8.45 fl.oz",
+    "youtuber_name": "올리브영 추천템 | 올영깡🐥",
+    "video_url": "https://www.youtube.com/watch?v=uL54Duske8U",
+    "ad_likelihood": 0.3,
+    "review": "This moisturizing toner earned a perfect 10/10 rating and was distinguished as a top-three product among those that improve subsequent skincare absorption."
+  },
+  {
+    "id": 157,
+    "asin": "B0D2Y3Y3BG",
+    "product_name": "BIOHEAL BOH Probioderm™ Collagen Remodeling Serum 1.01 fl oz (30 ml) | Skin Firming Serum with Collagen & 12 Peptides for Pore Tightening & Smoothing | Hydrating & Lifting for Daily Skincare",
+    "youtuber_name": "올리브영 추천템 | 올영깡🐥",
+    "video_url": "https://www.youtube.com/watch?v=79d9FJm1fc0",
+    "ad_likelihood": 0.4,
+    "review": "This skincare product receives a top rating in the review, highlighted as excellent for addressing pore concerns on makeup-free days."
+  },
+  {
+    "id": 158,
+    "asin": "B0GJCMYMJ4",
+    "product_name": "JOODOC Rose Gentle Cleansing Milk 250ml",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=Qbx6n4HoPT0",
+    "ad_likelihood": 0.1,
+    "review": "This evening first-step cleanser is formulated for delicate skin barriers, offering gentle, irritation-free cleansing through its slippery texture and a protective blend of mild surfactants and rose ingredients."
+  },
+  {
+    "id": 159,
+    "asin": "B09YZRFMLY",
+    "product_name": "ZEROID Dermanewal Cleansing Gel, 15.2 fl oz (450ml)",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=Qbx6n4HoPT0",
+    "ad_likelihood": 0.1,
+    "review": "This mild, low-foaming second-step cleanser is ideal for sensitive or damaged skin, and effectively removes light makeup or sunscreen when used after a cleansing milk."
+  },
+  {
+    "id": 160,
+    "asin": "B0FWJPQ24Y",
+    "product_name": "Dark Spot Brightening Cream with Vitamin C & Niacinamide, 0.7 fl oz",
+    "youtuber_name": "뷰드름 유뷰버 인씨",
+    "video_url": "https://www.youtube.com/watch?v=Qbx6n4HoPT0",
+    "ad_likelihood": 0.3,
+    "review": "This gentle product, containing vitamin C derivatives, niacinamide, and tranexamic acid, is suitable for sensitive skin as an alternative to pure vitamin C."
+  },
+  {
+    "id": 161,
+    "asin": "B0GMRSG6YF",
+    "product_name": "IOPE XMD Stem III Clinical Recovery Serum - Professional PDRN Treatment-Level Results - Visibly Firms, Plumps Volume, and Refines Pores - With Hyaluronic Acid - 1.01 fl. oz.",
+    "youtuber_name": "림온 RIMON",
+    "video_url": "https://www.youtube.com/watch?v=3rqSE6ygjCQ",
+    "ad_likelihood": 0.3,
+    "review": "This moisturizing glow ampoule is praised for its exceptional ability to deeply hydrate the skin, leading the reviewer to prefer it over other similar products."
+  },
+  {
+    "id": 162,
+    "asin": "B0CSYKK1XQ",
+    "product_name": "DERMATORY HYAL SHOT BARRIER AMPOULE B5 (50ml)",
+    "youtuber_name": "제나 dailyjenna",
+    "video_url": "https://www.youtube.com/watch?v=1vdwrbR6tjI",
+    "ad_likelihood": 1.0,
+    "review": "This ampoule rapidly delivers deep hydration to combination or dehydrated skin, utilizing fermented hyaluronic acid and barrier-strengthening ingredients for a non-sticky finish suitable for all skin types."
+  }
+]

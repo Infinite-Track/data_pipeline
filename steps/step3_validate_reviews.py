@@ -42,6 +42,10 @@ VALIDATOR_PROMPT_VERSION = "v1"  # 프롬프트를 바꿀 때마다 올려서 �
 MAX_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 5  # 재시도 간격. 시도할 때마다 배수로 늘어난다 (5초 → 10초).
 
+# 동시에 처리할 리뷰 수(비동기 병렬). 네트워크 대기가 겹쳐 처리량이 크게 오른다.
+# 429(rate limit)가 잦으면 낮추면 된다.
+CONCURRENCY = 8
+
 # 허용하는 카테고리 6개. 이 중 하나로 분류되지 않으면 리뷰 자체를 저장하지 않는다.
 ALLOWED_CATEGORIES = (
     "Cleansers",     # 클렌저
@@ -124,6 +128,7 @@ def _validate_content_sync(product_name: str, content: str) -> dict | None:
 async def _save_review(raw_review: dict, scored: dict) -> None:
     col = _get_reviews_collection()
     record = {
+        "raw_review_id": raw_review["_id"],
         "video_id": raw_review["video_id"],
         "product_name": raw_review["product_name"],
         "ad_likelihood": raw_review.get("ad_likelihood", 0.0),
@@ -157,28 +162,37 @@ async def run() -> None:
         logger.info("[STEP3] 검증할 raw_reviews가 없습니다.")
         return
 
-    for raw_review in unprocessed:
-        scored = await asyncio.to_thread(
-            _validate_content_sync, raw_review["product_name"], raw_review["content"]
-        )
-        if not scored:
-            # 기술적 실패(API 오류, JSON 파싱 실패) → processed_at을 남기지 않아 다음 실행에서 재시도한다.
-            logger.warning(f"[STEP3][RETRY] 검증 실패: {raw_review['video_id']} / {raw_review['product_name']}")
-            continue
+    sem = asyncio.Semaphore(CONCURRENCY)
 
-        if scored["category"] not in ALLOWED_CATEGORIES:
-            # 허용된 6개 카테고리가 아님 → 재시도해도 결과가 바뀌지 않을 영구적인 제외이므로
-            # processed_at만 남기고(재검증 방지) reviews에는 저장하지 않는다.
+    async def _process(raw_review: dict) -> None:
+        async with sem:
+            try:
+                scored = await asyncio.wait_for(
+                    asyncio.to_thread(_validate_content_sync, raw_review["product_name"], raw_review["content"]),
+                    timeout=150,
+                )
+            except asyncio.TimeoutError:
+                # Gemini 호출이 멈춘 경우: 미처리 유지(재시도용)하고 넘어간다.
+                logger.warning(f"[STEP3][TIMEOUT] 검증 타임아웃: {raw_review['video_id']} / {raw_review['product_name']}")
+                scored = None
+            if not scored:
+                # 기술적 실패 → processed_at을 남기지 않아 다음 실행에서 재시도한다.
+                logger.warning(f"[STEP3][RETRY] 검증 실패: {raw_review['video_id']} / {raw_review['product_name']}")
+                return
+            if scored["category"] not in ALLOWED_CATEGORIES:
+                # 허용 6개 카테고리 밖 → 영구 제외. processed_at만 남기고 reviews엔 저장 안 함.
+                await _mark_processed(raw_review["_id"])
+                logger.info(
+                    f"[STEP3][DROP] 허용 카테고리 아님({scored['category']!r}): "
+                    f"{raw_review['video_id']} / {raw_review['product_name']}"
+                )
+                return
+            await _save_review(raw_review, scored)
             await _mark_processed(raw_review["_id"])
-            logger.info(
-                f"[STEP3][DROP] 허용 카테고리 아님({scored['category']!r}): "
-                f"{raw_review['video_id']} / {raw_review['product_name']}"
-            )
-            continue
+            logger.info(f"[STEP3][SAVE] {raw_review['video_id']} / {raw_review['product_name']} 검증 완료.")
 
-        await _save_review(raw_review, scored)
-        await _mark_processed(raw_review["_id"])
-        logger.info(f"[STEP3][SAVE] {raw_review['video_id']} / {raw_review['product_name']} 검증 완료.")
+    # 동시 CONCURRENCY개씩 병렬 처리 (세마포어로 상한).
+    await asyncio.gather(*(_process(r) for r in unprocessed))
 
 
 if __name__ == "__main__":

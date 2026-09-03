@@ -37,15 +37,17 @@ def _compute_min_max(docs: list[dict]) -> dict[str, tuple[float, float]]:
 
 
 def normalize_score(raw: float, min_value: float, max_value: float) -> float:
-    """min-max로 0~100 스케일로 변환한다. min==max(전 상품이 같은 값)면 100으로 처리한다."""
+    """min-max로 0~100 스케일로 변환한다. min==max(변별력 없음)이면:
+    전 상품이 0(=해당 효능 데이터가 아예 없음)이면 0, 같은 양수값이면 100으로 처리한다.
+    (예전엔 무조건 100이라, 그 효능을 가진 상품이 하나도 없을 때 오히려 전부 만점으로 뒤집혔다.)"""
     if max_value <= min_value:
-        return 100.0
+        return 0.0 if max_value == 0 else 100.0
     return round((raw - min_value) / (max_value - min_value) * 100, 2)
 
 
 async def run() -> None:
     src_col, dst_col = _get_summarized_collection(), _get_normalized_collection()
-    await dst_col.create_index("product_name", unique=True)
+    await dst_col.create_index("asin", unique=True, partialFilterExpression={"asin": {"$exists": True}})
 
     docs = [doc async for doc in src_col.find({}, {"_id": 0})]
     if not docs:
@@ -60,7 +62,7 @@ async def run() -> None:
             if record.get(field) is not None and field in min_max:
                 min_value, max_value = min_max[field]
                 record[field] = normalize_score(record[field], min_value, max_value)
-        await dst_col.update_one({"product_name": record["product_name"]}, {"$set": record}, upsert=True)
+        await dst_col.update_one({"asin": record["asin"]}, {"$set": record}, upsert=True)
 
     logger.info(f"[STEP8] {len(docs)}개 상품 → products_normalized 저장 완료 (min-max 정규화).")
 
