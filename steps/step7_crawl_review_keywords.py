@@ -10,9 +10,7 @@ products에서 status=READY_FOR_KEYWORD_ANALYSIS인 상품에 대해:
 이 파일은 "무엇을 언제" 하는 흐름만 담는다. name_kr이 없으면 그 상품은 건너뛴다.
 """
 import asyncio
-import os
 
-import psycopg2
 from loguru import logger
 
 from steps.db import get_collection
@@ -67,16 +65,19 @@ async def run() -> None:
     logger.info(f"[STEP7][SPARK] 리뷰 {len(rows)}건 → {len(result)}개 상품 키워드 산출")
 
     # ③ Postgres 저장 + status 전이(대상은 모두 COMPLETE로 진행 — 키워드는 부가정보).
-    conn = psycopg2.connect(os.environ["POSTGRES_URI"])
+    conn = pg.connect()
     try:
-        pg.ensure_catalog_schema(conn)
-        pg.ensure_reviews_keyword_schema(conn)
         for p in pending:
             asin = p["asin"]
             top = result.get(asin, [])
             if top:
-                await asyncio.to_thread(pg.publish_keywords, conn, p, top)
-                logger.info(f"[STEP7][OK] {asin}: 키워드 {len(top)}개 저장")
+                try:
+                    product_id = await asyncio.to_thread(pg.get_or_create_product_id, conn, p)
+                    await asyncio.to_thread(pg.publish_keywords, conn, product_id, top)
+                    logger.info(f"[STEP7][OK] {asin}: 키워드 {len(top)}개 저장")
+                except Exception as exc:
+                    conn.rollback()
+                    logger.warning(f"[STEP7][PG] 키워드 발행 실패 asin={asin}: {exc}")
             else:
                 logger.info(f"[STEP7][NOKW] {asin}: 키워드 없음(매칭/리뷰 실패) — 상태만 진행")
             await products_col.update_one({"asin": asin}, {"$set": {"status": "READY_FOR_ANALYSIS"}})

@@ -12,7 +12,7 @@ async def gather_rows(asin: str) -> list[dict]:
     reviews = [
         r async for r in get_collection("reviews").find(
             {"asin": asin, "status": "COMPLETED"},
-            {"_id": 0, "video_id": 1, "raw_review_id": 1},
+            {"_id": 0, "video_id": 1, "raw_review_id": 1, "ad_likelihood": 1},
         )
     ]
     if not reviews:
@@ -50,5 +50,6 @@ async def gather_rows(asin: str) -> list[dict]:
             "video_url": v.get("url"),
             "youtuber_name": yt.get("channel_name"),
             "review_summary": raw.get("review_summary"),
+            "ad_likelihood": r.get("ad_likelihood"),
         })
     return rows

@@ -1,34 +1,43 @@
-"""Postgres 서빙 테이블 발행 공용 헬퍼 (per-step 직접 write).
+"""Postgres 서빙 테이블 발행 공용 헬퍼 (운영 스키마 기준, per-step 직접 write).
 
-products_catalog가 허브 테이블(step4가 최초 생성). 나머지 서빙 테이블은 product_catalog_id로
-이를 참조한다. 각 step은 자기 테이블을 ensure_*로 보장하고 upsert 한다(멱등).
+운영 Postgres 스키마는 백엔드가 Flyway로 소유한다(2026-09-12 V19 기준). 그래서 이 모듈은 DDL을 실행하지 않고,
+실행 전 preflight_schema()로 필요한 테이블·컬럼이 있는지만 확인한다(main.py의 preflight task).
 
-- upsert_catalog(): step4 전용. 카탈로그 필드를 전부 덮어쓰는 authoritative upsert.
-- get_or_create_catalog_id(): 하위 step(step5~9)용. 없으면 최소 생성, 있으면 건드리지 않고 id만.
-  (step4가 채운 name/description 등을 하위 step이 null로 덮어쓰지 않도록.)
+운영 스키마 요약 (postgres_export/prod_schema_2026-09-12.md):
+- products_catalog: id VARCHAR(숫자 문자열, 자동 채번 없음 → 여기서 max+1), asin(비유니크 → asin으로 조회),
+  name NN, category, brand, price, thumbnail_url, mention_count, ad_ratio, content(=설명), created_at
+- 하위 테이블은 전부 product_id(VARCHAR) FK: products_url(id identity), youtuber_reviews(id 자동 없음 → max+1),
+  product_ingredient(단수, id serial, UNIQUE(product_id, inci_order, raw_name), source NN),
+  product_inci_analysis(PK product_id, ingredients/effects jsonb), reviews_keyword(id identity, UNIQUE(product_id, keyword)),
+  products_normalized(PK product_id, 점수 20종 NN)
+
+허브는 products_catalog. 최초 생성은 step5(upsert_catalog, authoritative). 하위 step은 get_product_id로 조회하거나
+get_or_create_product_id로 최소 행만 만든다(step5가 채운 값을 덮지 않음).
 """
+import json
 import os
 from urllib.parse import urlparse
 
 import psycopg2
+from psycopg2.extras import Json
 
 
 def connect():
     return psycopg2.connect(os.environ["POSTGRES_URI"])
 
 
-# 파이프라인이 실제로 INSERT/UPDATE 하는 테이블과 컬럼. 실행 전 preflight_schema()로 대상 DB에 전부 있는지
-# 확인한다 — 운영 DB(Flyway 관리)가 이 형태와 다르면 ensure_*의 DDL이 스키마를 건드리고 INSERT는 실패하므로,
-# 아무것도 쓰기 전에 중단하기 위한 검사.
+# ── 실행 전 스키마 검사 ──────────────────────────────────────────────
+# 파이프라인이 실제로 INSERT/UPDATE 하는 테이블과 컬럼(운영 스키마). 하나라도 없으면 main.py preflight가 중단한다.
 REQUIRED_SCHEMA: dict[str, list[str]] = {
     "products_catalog": ["id", "asin", "name", "category", "brand", "price", "thumbnail_url",
-                         "mention_count", "ad_ratio", "description", "created_at"],
-    "products_url": ["id", "product_catalog_id", "url", "domain"],
-    "youtuber_reviews": ["id", "asin", "video_url", "youtuber_name", "review_summary"],
-    "product_ingredients": ["id", "product_catalog_id", "raw_name", "inci_order", "source"],
-    "product_efficacies": ["id", "product_catalog_id", "content"],
-    "reviews_keyword": ["id", "product_catalog_id", "keyword", "multiple"],
-    "products_normalized": ["asin", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
+                         "mention_count", "ad_ratio", "content", "created_at"],
+    "products_url": ["id", "product_id", "url", "domain", "region", "active", "updated_at"],
+    "youtuber_reviews": ["id", "product_id", "youtuber_name", "video_url", "ad_likelihood", "review"],
+    "product_ingredient": ["id", "product_id", "raw_name", "inci_order", "source"],
+    "product_inci_analysis": ["product_id", "ingredients", "effects", "overall_safety_score",
+                              "inci_coverage", "ingredient_source", "schema_version", "analyzed_at"],
+    "reviews_keyword": ["id", "product_id", "keyword", "multiple"],
+    "products_normalized": ["product_id", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
                             "sensitivity", "melanin", "water", "rough", "red_spot", "skin_type_dry",
                             "skin_type_combination", "skin_type_normal", "skin_type_oily", "allergen_risk",
                             "pregnancy_risk", "comedogenicity_risk", "fragrance_risk", "irritancy_risk",
@@ -38,8 +47,7 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
 
 def preflight_schema(conn) -> list[str]:
     """대상 Postgres에 REQUIRED_SCHEMA의 테이블·컬럼이 전부 있는지 확인하고 문제 목록을 반환한다(빈 목록 = 통과).
-    읽기 전용(information_schema 조회만). 테이블이 아예 없는 경우도 문제로 본다 — 운영 DB에 파이프라인이
-    테이블을 만들어 넣는 것은 스키마 소유자(백엔드 Flyway)와 충돌하므로 허용하지 않는다."""
+    읽기 전용(information_schema 조회만)."""
     problems: list[str] = []
     with conn.cursor() as cur:
         cur.execute("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'")
@@ -56,21 +64,20 @@ def preflight_schema(conn) -> list[str]:
     return problems
 
 
+# ── 값 정규화 ─────────────────────────────────────────────────────────
 _CATEGORIES = ("Cleansers", "Toners", "Treatments", "Moisturizers", "Sunscreens", "Face masks")
 _CATEGORY_BY_LOWER = {c.lower(): c for c in _CATEGORIES}
 
 
 def _canon_category(value):
-    """카테고리 표기 정규화. 어드민(Spring)은 소문자('treatments')로, 파이프라인·운영 Postgres는
-    'Treatments' 표기를 써서 Postgres에 대소문자가 섞였다. 허용 6종은 표준 표기로, 그 외는 그대로."""
+    """카테고리 표기 정규화. 어드민(Spring)은 소문자('treatments')로 저장하고 운영은 'Treatments' 표기를 쓴다."""
     if not value:
         return value
     return _CATEGORY_BY_LOWER.get(str(value).strip().lower(), value)
 
 
 def _num(value):
-    """Mongo 숫자 → Postgres용 float. 어드민(Spring)이 price 등을 BSON Decimal128로 저장하는데
-    psycopg2는 Decimal128을 변환하지 못해("can't adapt type 'Decimal128'") 발행이 통째로 실패한다."""
+    """Mongo 숫자 → float. 어드민이 저장한 BSON Decimal128은 psycopg2가 변환하지 못한다."""
     if value is None:
         return None
     if hasattr(value, "to_decimal"):  # bson.decimal128.Decimal128
@@ -78,167 +85,189 @@ def _num(value):
     return float(value)
 
 
-def ensure_catalog_schema(conn) -> None:
-    """products_catalog(허브) + products_url 생성(없으면)."""
+def _int(value):
+    return None if value is None else int(value)
+
+
+# ── 카탈로그 (허브) ───────────────────────────────────────────────────
+def get_product_id(conn, asin: str) -> str | None:
+    """asin으로 products_catalog.id를 찾는다. 없으면 None. (asin이 유니크 제약이 아니라 가장 오래된 id를 쓴다.)"""
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS products_catalog (
-                id            SERIAL PRIMARY KEY,
-                asin          TEXT UNIQUE NOT NULL,
-                name          TEXT,
-                category      TEXT,
-                brand         TEXT,
-                price         NUMERIC,
-                thumbnail_url  TEXT,
-                mention_count INTEGER,
-                ad_ratio      DOUBLE PRECISION,
-                description   TEXT,
-                created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            )""")
-        # 기존 테이블에도 created_at 보장(멱등). upsert가 이 컬럼을 건드리지 않으므로 최초 삽입 시각이 유지된다.
-        cur.execute("ALTER TABLE products_catalog ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()")
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS products_url (
-                id                 SERIAL PRIMARY KEY,
-                product_catalog_id INTEGER REFERENCES products_catalog(id),
-                url                TEXT,
-                domain             TEXT
-            )""")
-    conn.commit()
+        cur.execute("SELECT id FROM products_catalog WHERE asin = %s ORDER BY id::int LIMIT 1", (asin,))
+        row = cur.fetchone()
+    return row[0] if row else None
 
 
-def upsert_catalog(conn, product: dict) -> int:
-    """asin 기준 카탈로그 전체 upsert(step4 authoritative). id 반환."""
+def _insert_catalog(cur, product: dict) -> str:
+    """products_catalog에 새 행을 넣고 id를 반환. id는 자동 채번이 없어 max+1(숫자 문자열)로 만든다.
+    호출 전 같은 트랜잭션에서 테이블 락을 잡아 동시 삽입 시 id 충돌을 막는다."""
+    cur.execute("LOCK TABLE products_catalog IN SHARE ROW EXCLUSIVE MODE")
+    cur.execute("SELECT COALESCE(MAX(id::int), 0) + 1 FROM products_catalog WHERE id ~ '^[0-9]+$'")
+    new_id = str(cur.fetchone()[0])
+    cur.execute(
+        """INSERT INTO products_catalog
+               (id, asin, name, category, brand, price, thumbnail_url, mention_count, ad_ratio, content)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+        (new_id, product["asin"], product.get("name") or product["asin"], _canon_category(product.get("category")),
+         product.get("brand"), _num(product.get("price")), product.get("thumbnail_url"),
+         _int(product.get("mention_count")), _num(product.get("ad_ratio")), product.get("description")),
+    )
+    return new_id
+
+
+def upsert_catalog(conn, product: dict) -> str:
+    """asin 기준 카탈로그 전체 upsert(step5 authoritative). 있으면 필드 갱신, 없으면 생성. id 반환."""
+    pid = get_product_id(conn, product["asin"])
     with conn.cursor() as cur:
-        cur.execute(
-            """INSERT INTO products_catalog
-                   (asin, name, category, brand, price, thumbnail_url, mention_count, ad_ratio, description)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-               ON CONFLICT (asin) DO UPDATE SET
-                   name = EXCLUDED.name, category = EXCLUDED.category, brand = EXCLUDED.brand,
-                   price = EXCLUDED.price, thumbnail_url = EXCLUDED.thumbnail_url,
-                   mention_count = EXCLUDED.mention_count, ad_ratio = EXCLUDED.ad_ratio,
-                   description = EXCLUDED.description
-               RETURNING id""",
-            (product["asin"], product.get("name"), _canon_category(product.get("category")),
-             product.get("brand"), _num(product.get("price")), product.get("thumbnail_url"),
-             None if product.get("mention_count") is None else int(product["mention_count"]),  # bson Int64 → int
-             _num(product.get("ad_ratio")), product.get("description")),
-        )
-        cid = cur.fetchone()[0]
-    conn.commit()
-    return cid
-
-
-def get_or_create_catalog_id(conn, product: dict) -> int:
-    """카탈로그 행이 없으면 최소(asin,name)로 생성, 있으면 그대로 두고 id만 반환(non-clobbering).
-    ON CONFLICT DO UPDATE SET asin=EXCLUDED.asin 는 값을 안 바꾸면서 RETURNING을 성립시키는 트릭."""
-    with conn.cursor() as cur:
-        cur.execute(
-            """INSERT INTO products_catalog (asin, name)
-               VALUES (%s, %s)
-               ON CONFLICT (asin) DO UPDATE SET asin = EXCLUDED.asin
-               RETURNING id""",
-            (product["asin"], product.get("name") or product["asin"]),
-        )
-        cid = cur.fetchone()[0]
-    conn.commit()
-    return cid
-
-
-def upsert_url(conn, catalog_id: int, product: dict) -> None:
-    """상품의 판매 URL을 products_url에 발행(기존 행 삭제 후 삽입 → 멱등)."""
-    url = product.get("product_url")
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM products_url WHERE product_catalog_id = %s", (catalog_id,))
-        if url:
+        if pid is None:
+            pid = _insert_catalog(cur, product)
+        else:
             cur.execute(
-                "INSERT INTO products_url (product_catalog_id, url, domain) VALUES (%s, %s, %s)",
-                (catalog_id, url, urlparse(url).netloc or None),
+                """UPDATE products_catalog SET
+                       name = COALESCE(%s, name), category = COALESCE(%s, category), brand = COALESCE(%s, brand),
+                       price = COALESCE(%s, price), thumbnail_url = COALESCE(%s, thumbnail_url),
+                       mention_count = COALESCE(%s, mention_count), ad_ratio = COALESCE(%s, ad_ratio),
+                       content = COALESCE(%s, content)
+                   WHERE id = %s""",
+                (product.get("name"), _canon_category(product.get("category")), product.get("brand"),
+                 _num(product.get("price")), product.get("thumbnail_url"), _int(product.get("mention_count")),
+                 _num(product.get("ad_ratio")), product.get("description"), pid),
             )
     conn.commit()
+    return pid
 
 
-def publish_catalog(conn, product: dict) -> int:
-    """step4용: 카탈로그 + URL을 함께 발행하고 catalog_id를 반환."""
-    cid = upsert_catalog(conn, product)
-    upsert_url(conn, cid, product)
-    return cid
+def get_or_create_product_id(conn, product: dict) -> str:
+    """하위 step용: 카탈로그 행이 없으면 최소(asin, name)로 생성, 있으면 그대로 두고 id만 반환(non-clobbering)."""
+    pid = get_product_id(conn, product["asin"])
+    if pid is None:
+        with conn.cursor() as cur:
+            pid = _insert_catalog(cur, {"asin": product["asin"], "name": product.get("name")})
+        conn.commit()
+    return pid
+
+
+def upsert_url(conn, product_id: str, product: dict) -> None:
+    """상품의 Amazon 구매 링크를 products_url에 발행. 같은 product_id의 amazon.com(US) 행이 있으면 갱신,
+    없으면 추가. 백엔드가 관리하는 다른 링크 행은 건드리지 않는다(삭제 없음)."""
+    url = product.get("product_url")
+    if not url:
+        return
+    domain = urlparse(url).netloc or None
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM products_url WHERE product_id = %s AND domain = %s AND region = 'US' ORDER BY id LIMIT 1",
+            (product_id, domain),
+        )
+        row = cur.fetchone()
+        if row:
+            cur.execute("UPDATE products_url SET url = %s, active = true, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                        (url, row[0]))
+        else:
+            cur.execute("INSERT INTO products_url (product_id, url, domain, region, active) VALUES (%s, %s, %s, 'US', true)",
+                        (product_id, url, domain))
+    conn.commit()
+
+
+def publish_catalog(conn, product: dict) -> str:
+    """step5용: 카탈로그 + 구매 링크를 함께 발행하고 product_id를 반환."""
+    pid = upsert_catalog(conn, product)
+    upsert_url(conn, pid, product)
+    return pid
 
 
 # ── 유튜버 리뷰 (step5 신규 / step4 기존 갱신) ─────────────────────────
-def ensure_youtuber_reviews_schema(conn) -> None:
+def publish_youtuber_reviews(conn, product_id: str, rows: list[dict]) -> None:
+    """product_id의 유튜버 리뷰를 (product_id, video_url) 기준 upsert. 새 영상은 추가, 기존 행은 값만 갱신(id 유지).
+    id는 자동 채번이 없어 max+1로 만든다(테이블 락으로 동시 삽입 보호)."""
+    rows = [r for r in rows if r.get("video_url")]
+    if not rows:
+        return
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS youtuber_reviews (
-                id             SERIAL PRIMARY KEY,
-                asin           TEXT REFERENCES products_catalog(asin),
-                video_url      TEXT,
-                youtuber_name  TEXT,
-                review_summary TEXT
-            )""")
-        # (asin, video_url)이 행의 정체성. upsert 충돌 키로 쓰며, 재실행 시 중복 행이 생기지 않게 한다.
-        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_youtuber_reviews_asin_video "
-                    "ON youtuber_reviews (asin, video_url)")
+        cur.execute("LOCK TABLE youtuber_reviews IN SHARE ROW EXCLUSIVE MODE")
+        cur.execute("SELECT COALESCE(MAX(id), 0) FROM youtuber_reviews")
+        next_id = cur.fetchone()[0] + 1
+        for row in rows:
+            cur.execute("SELECT id FROM youtuber_reviews WHERE product_id = %s AND video_url = %s ORDER BY id LIMIT 1",
+                        (product_id, row["video_url"]))
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    """UPDATE youtuber_reviews SET youtuber_name = %s, ad_likelihood = %s,
+                           review = COALESCE(%s, review) WHERE id = %s""",
+                    (row.get("youtuber_name"), _num(row.get("ad_likelihood")), row.get("review_summary"), existing[0]),
+                )
+            else:
+                cur.execute(
+                    """INSERT INTO youtuber_reviews (id, product_id, youtuber_name, video_url, ad_likelihood, review)
+                       VALUES (%s, %s, %s, %s, %s, %s)""",
+                    (next_id, product_id, row.get("youtuber_name"), row["video_url"],
+                     _num(row.get("ad_likelihood")), row.get("review_summary")),
+                )
+                next_id += 1
     conn.commit()
 
 
-def catalog_exists(conn, asin: str) -> bool:
-    """products_catalog에 해당 asin 행이 있는지(= 이미 발행된 상품인지)."""
+# ── 성분 (step5 / step6) ─────────────────────────────────────────────
+def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None) -> None:
+    """성분을 product_ingredient에 발행(해당 product_id 행 삭제 후 라벨순 삽입 → 멱등).
+    source: official_site / oliveyoung / 어드민 입력(None)은 운영 기본값 'ADMIN'."""
     with conn.cursor() as cur:
-        cur.execute("SELECT 1 FROM products_catalog WHERE asin = %s", (asin,))
-        return cur.fetchone() is not None
-
-
-def publish_youtuber_reviews(conn, asin: str, rows: list[dict]) -> None:
-    """asin의 유튜버 리뷰를 youtuber_reviews에 (asin, video_url) 기준 upsert한다(멱등).
-    새 영상 리뷰는 행이 추가되고, 이미 있는 행은 id를 유지한 채 값만 갱신된다.
-    FK(asin→catalog) 때문에 catalog 행이 먼저 있어야 한다(호출 전 보장)."""
-    with conn.cursor() as cur:
-        for row in rows:
-            if not row.get("video_url"):
-                continue  # 충돌 키가 없는 행은 넣지 않는다(videos 조인 실패 케이스)
+        cur.execute("DELETE FROM product_ingredient WHERE product_id = %s", (product_id,))
+        seen: set[tuple[int, str]] = set()
+        for order, raw in enumerate(ingredients, 1):
+            name = (raw or "").strip()[:300]
+            if not name or (order, name) in seen:
+                continue
+            seen.add((order, name))
             cur.execute(
-                """INSERT INTO youtuber_reviews (asin, video_url, youtuber_name, review_summary)
-                   VALUES (%s, %s, %s, %s)
-                   ON CONFLICT (asin, video_url) DO UPDATE SET
-                       youtuber_name = EXCLUDED.youtuber_name,
-                       review_summary = EXCLUDED.review_summary""",
-                (asin, row["video_url"], row.get("youtuber_name"), row.get("review_summary")),
+                "INSERT INTO product_ingredient (product_id, raw_name, inci_order, source) VALUES (%s, %s, %s, %s)",
+                (product_id, name, order, source or "ADMIN"),
             )
+    conn.commit()
+
+
+# ── INCI 분석 (step6) ─────────────────────────────────────────────────
+def publish_inci_analysis(conn, product_id: str, raw: dict, declared: list[str] | None, source: str | None) -> None:
+    """INCI API 원본(products.inciapi_raw_data)을 product_inci_analysis에 upsert.
+    ingredients = {"parsed": parsedIngredients, "declared": 라벨 성분 리스트}, effects = efficacySummary.topEffects."""
+    ingredients = {"parsed": raw.get("parsedIngredients") or [], "declared": list(declared or [])}
+    effects = ((raw.get("efficacySummary") or {}).get("topEffects")) or []
+    with conn.cursor() as cur:
+        cur.execute(
+            """INSERT INTO product_inci_analysis
+                   (product_id, ingredients, effects, overall_safety_score, inci_coverage, ingredient_source,
+                    schema_version, analyzed_at)
+               VALUES (%s, %s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP)
+               ON CONFLICT (product_id) DO UPDATE SET
+                   ingredients = EXCLUDED.ingredients, effects = EXCLUDED.effects,
+                   overall_safety_score = EXCLUDED.overall_safety_score, inci_coverage = EXCLUDED.inci_coverage,
+                   ingredient_source = EXCLUDED.ingredient_source, schema_version = EXCLUDED.schema_version,
+                   analyzed_at = EXCLUDED.analyzed_at""",
+            (product_id, Json(ingredients, dumps=lambda o: json.dumps(o, ensure_ascii=False)),
+             Json(effects, dumps=lambda o: json.dumps(o, ensure_ascii=False)),
+             _num(raw.get("overallSafetyScore")), _num(raw.get("coverage")), source),
+        )
     conn.commit()
 
 
 # ── 리뷰 키워드 (step7) ────────────────────────────────────────────────
-def ensure_reviews_keyword_schema(conn) -> None:
+def publish_keywords(conn, product_id: str, top: list[dict]) -> None:
+    """상위 키워드를 reviews_keyword에 발행(해당 product_id 행 삭제 후 삽입 → 멱등). UNIQUE(product_id, keyword)."""
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS reviews_keyword (
-                id                 SERIAL PRIMARY KEY,
-                product_catalog_id INTEGER REFERENCES products_catalog(id),
-                keyword            VARCHAR(255),
-                multiple           DOUBLE PRECISION
-            )""")
-    conn.commit()
-
-
-def publish_keywords(conn, product: dict, top: list[dict]) -> int:
-    """상품의 상위 키워드를 reviews_keyword에 발행(기존 행 삭제 후 삽입 → 멱등).
-    catalog 행은 non-clobbering get-or-create(step4가 채운 필드를 덮지 않음)."""
-    cid = get_or_create_catalog_id(conn, product)
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM reviews_keyword WHERE product_catalog_id = %s", (cid,))
+        cur.execute("DELETE FROM reviews_keyword WHERE product_id = %s", (product_id,))
+        seen: set[str] = set()
         for row in top:
-            cur.execute(
-                "INSERT INTO reviews_keyword (product_catalog_id, keyword, multiple) VALUES (%s, %s, %s)",
-                (cid, row["keyword"], row["multiple"]),
-            )
+            kw = (row.get("keyword") or "").strip()[:255]
+            if not kw or kw in seen:
+                continue
+            seen.add(kw)
+            cur.execute("INSERT INTO reviews_keyword (product_id, keyword, multiple) VALUES (%s, %s, %s)",
+                        (product_id, kw, float(row["multiple"])))
     conn.commit()
-    return cid
 
 
 # ── 정규화 점수 (step9) ────────────────────────────────────────────────
-# products_normalized(Postgres) 점수 컬럼 20종 (asin + 이들 + summarized_at).
 NORMALIZED_FIELDS = [
     "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne", "sensitivity",
     "melanin", "water", "rough", "red_spot", "skin_type_dry", "skin_type_combination",
@@ -247,106 +276,20 @@ NORMALIZED_FIELDS = [
 ]
 
 
-def ensure_normalized_schema(conn) -> None:
-    cols = ",\n                ".join(f"{f} DOUBLE PRECISION" for f in NORMALIZED_FIELDS)
-    with conn.cursor() as cur:
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS products_normalized (
-                asin          TEXT PRIMARY KEY REFERENCES products_catalog(asin),
-                {cols},
-                summarized_at TIMESTAMP
-            )""")
-    conn.commit()
-
-
-def publish_normalized(conn, record: dict) -> None:
-    """정규화 점수 1건을 products_normalized에 asin 기준 upsert(멱등).
-    FK(asin→catalog)를 위해 카탈로그 행을 먼저 보장한다."""
-    get_or_create_catalog_id(conn, {"asin": record["asin"], "name": record.get("product_name")})
-    cols = ["asin"] + NORMALIZED_FIELDS + ["summarized_at"]
-    vals = [record.get(c) for c in cols]
+def publish_normalized(conn, product_id: str, record: dict) -> bool:
+    """정규화 점수 1건을 products_normalized에 product_id 기준 upsert. 운영 컬럼이 전부 NOT NULL이라
+    값이 하나라도 없으면 쓰지 않고 False를 반환한다(호출부가 경고)."""
+    values = [_num(record.get(f)) for f in NORMALIZED_FIELDS]
+    if any(v is None for v in values) or not record.get("summarized_at"):
+        return False
+    cols = ["product_id"] + NORMALIZED_FIELDS + ["summarized_at"]
     placeholders = ", ".join(["%s"] * len(cols))
-    updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != "asin")
+    updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c != "product_id")
     with conn.cursor() as cur:
         cur.execute(
-            f"""INSERT INTO products_normalized ({', '.join(cols)})
-                VALUES ({placeholders})
-                ON CONFLICT (asin) DO UPDATE SET {updates}""",
-            vals,
+            f"INSERT INTO products_normalized ({', '.join(cols)}) VALUES ({placeholders}) "
+            f"ON CONFLICT (product_id) DO UPDATE SET {updates}",
+            [product_id] + values + [record["summarized_at"]],
         )
     conn.commit()
-
-
-# ── 효능 (step6) ──────────────────────────────────────────────────────
-def ensure_efficacies_schema(conn) -> None:
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS product_efficacies (
-                id                 SERIAL PRIMARY KEY,
-                product_catalog_id INTEGER REFERENCES products_catalog(id),
-                content            TEXT
-            )""")
-    conn.commit()
-
-
-def publish_efficacy(conn, product: dict, efficacy, functions: list[str] | None = None) -> int:
-    """상품 효능을 product_efficacies에 발행(멱등): 효능 하나당 행 1개, content = 효능명.
-    - INCI efficacySummary.topEffects의 target (소문자, 예: 'hydration', 'barrier_repair')
-    - 어드민이 입력한 식약처 기능성 function 라벨 (대문자, 예: 'WHITENING', 'UV_PROTECTION')
-    기존 행 삭제 후 재삽입. 둘 다 비면 행 없음."""
-    cid = get_or_create_catalog_id(conn, product)
-    names: list[str] = []
-    for effect in ((efficacy or {}).get("topEffects") or []) if isinstance(efficacy, dict) else []:
-        target = (effect.get("target") or "").strip()
-        if target and target not in names:
-            names.append(target)
-    for fn in functions or []:
-        fn = (fn or "").strip()
-        if fn and fn not in names:
-            names.append(fn)
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM product_efficacies WHERE product_catalog_id = %s", (cid,))
-        for name in names:
-            cur.execute(
-                "INSERT INTO product_efficacies (product_catalog_id, content) VALUES (%s, %s)",
-                (cid, name),
-            )
-    conn.commit()
-    return cid
-
-
-# ── 성분 (step5) ──────────────────────────────────────────────────────
-def ensure_ingredients_schema(conn) -> None:
-    with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS product_ingredients (
-                id                 SERIAL PRIMARY KEY,
-                product_catalog_id INTEGER REFERENCES products_catalog(id),
-                ingredient_id      INTEGER,
-                raw_name           TEXT,
-                inci_order         INTEGER,
-                concentration_min  DOUBLE PRECISION,
-                concentration_max  DOUBLE PRECISION,
-                concentration_unit TEXT,
-                source             TEXT
-            )""")
-        # 기존 테이블에도 신규 컬럼 보장(멱등).
-        cur.execute("ALTER TABLE product_ingredients ADD COLUMN IF NOT EXISTS concentration_max DOUBLE PRECISION")
-        cur.execute("ALTER TABLE product_ingredients ADD COLUMN IF NOT EXISTS concentration_unit TEXT")
-    conn.commit()
-
-
-def publish_ingredients(conn, product: dict, ingredients: list[str], source: str | None) -> int:
-    """성분을 product_ingredients에 발행(기존 행 삭제 후 라벨순 삽입 → 멱등).
-    지금은 raw_name / inci_order / source만 채우고 ingredient_id·concentration_min은 NULL."""
-    cid = get_or_create_catalog_id(conn, product)
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM product_ingredients WHERE product_catalog_id = %s", (cid,))
-        for order, raw in enumerate(ingredients, 1):
-            cur.execute(
-                """INSERT INTO product_ingredients (product_catalog_id, raw_name, inci_order, source)
-                   VALUES (%s, %s, %s, %s)""",
-                (cid, raw, order, source),
-            )
-    conn.commit()
-    return cid
+    return True

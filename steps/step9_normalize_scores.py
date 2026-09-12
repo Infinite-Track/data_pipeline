@@ -34,17 +34,29 @@ async def run() -> None:
     # PySpark로 전역 min-max 정규화 (집계 + transform). 매 배치 전체 재계산.
     normalized = await asyncio.to_thread(spark_normalize.normalize, docs, CONCERN_FIELDS)
 
-    # products_normalized는 Postgres에만 저장한다(Mongo 저장 없음).
+    # products_normalized는 Postgres에만 저장한다(Mongo 저장 없음). 카탈로그에 없는 상품(아직 step5 발행 전)은 건너뛴다.
     conn = pg.connect()
+    written = skipped = 0
     try:
-        pg.ensure_catalog_schema(conn)
-        pg.ensure_normalized_schema(conn)
         for record in normalized:
-            await asyncio.to_thread(pg.publish_normalized, conn, record)
+            try:
+                product_id = await asyncio.to_thread(pg.get_product_id, conn, record["asin"])
+                if product_id is None:
+                    skipped += 1
+                    continue
+                if await asyncio.to_thread(pg.publish_normalized, conn, product_id, record):
+                    written += 1
+                else:
+                    skipped += 1
+                    logger.warning(f"[STEP9][PG] 점수 누락으로 건너뜀 asin={record['asin']}")
+            except Exception as exc:
+                conn.rollback()
+                skipped += 1
+                logger.warning(f"[STEP9][PG] 발행 실패 asin={record.get('asin')}: {exc}")
     finally:
         conn.close()
 
-    logger.info(f"[STEP9] {len(normalized)}개 상품 → products_normalized(Postgres) 저장 완료 (Spark min-max 정규화).")
+    logger.info(f"[STEP9] {written}개 상품 → products_normalized(Postgres) 저장 완료, {skipped}개 건너뜀 (Spark min-max 정규화).")
 
 
 if __name__ == "__main__":

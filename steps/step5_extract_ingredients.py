@@ -185,14 +185,11 @@ def _publish_product_sync(product: dict, yt_rows: list[dict]) -> None:
         logger.warning(f"[STEP5][PG] Postgres 연결 실패 — 발행 건너뜀: {exc}")
         return
     try:
-        pg.ensure_catalog_schema(conn)
-        pg.ensure_ingredients_schema(conn)
-        pg.ensure_youtuber_reviews_schema(conn)
-        pg.publish_catalog(conn, product)          # products_catalog + products_url (authoritative)
-        pg.publish_ingredients(conn, product,
-                               product.get("ingredients") or [], product.get("ingredient_source"))
-        pg.publish_youtuber_reviews(conn, product["asin"], yt_rows)
+        product_id = pg.publish_catalog(conn, product)   # products_catalog + products_url (authoritative)
+        pg.publish_ingredients(conn, product_id, product.get("ingredients") or [], product.get("ingredient_source"))
+        pg.publish_youtuber_reviews(conn, product_id, yt_rows)
     except Exception as exc:
+        conn.rollback()
         logger.warning(f"[STEP5][PG] 발행 실패 asin={product.get('asin')}: {exc}")
     finally:
         conn.close()

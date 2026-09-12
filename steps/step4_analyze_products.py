@@ -209,11 +209,13 @@ async def _refresh_youtuber_reviews(pg_conn, asin: str) -> None:
     if pg_conn is None:
         return
     try:
-        if not await asyncio.to_thread(pg.catalog_exists, pg_conn, asin):
+        product_id = await asyncio.to_thread(pg.get_product_id, pg_conn, asin)
+        if product_id is None:
             return
         rows = await youtuber_reviews.gather_rows(asin)
-        await asyncio.to_thread(pg.publish_youtuber_reviews, pg_conn, asin, rows)
+        await asyncio.to_thread(pg.publish_youtuber_reviews, pg_conn, product_id, rows)
     except Exception as exc:
+        pg_conn.rollback()
         logger.warning(f"[STEP4][PG] youtuber_reviews 갱신 실패 asin={asin}: {exc}")
 
 
@@ -308,8 +310,6 @@ async def run() -> list[str]:
     pg_conn = None
     try:
         pg_conn = pg.connect()
-        pg.ensure_catalog_schema(pg_conn)
-        pg.ensure_youtuber_reviews_schema(pg_conn)
     except Exception as exc:
         logger.warning(f"[STEP4][PG] Postgres 연결 실패 — youtuber_reviews 갱신 건너뜀: {exc}")
         pg_conn = None
