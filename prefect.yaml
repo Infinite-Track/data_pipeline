@@ -31,6 +31,6 @@ deployments:
           AMAZON_PARTNER_TAG: "{{ $AMAZON_PARTNER_TAG }}"  # 제휴 링크 조립용
           # JAVA_HOME은 이미지가 /opt/java로 이미 설정하므로 넣지 않는다.
     schedule:
-      cron: "10 18 * * *"
+      cron: "0 1 * * *"     # 매일 새벽 1시(KST)
       timezone: Asia/Seoul
     tags: [kbeauty, pipeline]
