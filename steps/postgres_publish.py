@@ -17,6 +17,16 @@ def connect():
     return psycopg2.connect(os.environ["POSTGRES_URI"])
 
 
+def _num(value):
+    """Mongo 숫자 → Postgres용 float. 어드민(Spring)이 price 등을 BSON Decimal128로 저장하는데
+    psycopg2는 Decimal128을 변환하지 못해("can't adapt type 'Decimal128'") 발행이 통째로 실패한다."""
+    if value is None:
+        return None
+    if hasattr(value, "to_decimal"):  # bson.decimal128.Decimal128
+        value = value.to_decimal()
+    return float(value)
+
+
 def ensure_catalog_schema(conn) -> None:
     """products_catalog(허브) + products_url 생성(없으면)."""
     with conn.cursor() as cur:
@@ -60,8 +70,8 @@ def upsert_catalog(conn, product: dict) -> int:
                    description = EXCLUDED.description
                RETURNING id""",
             (product["asin"], product.get("name"), product.get("category"),
-             product.get("brand"), product.get("price"), product.get("thumbnail_url"),
-             product.get("mention_count"), product.get("ad_ratio"), product.get("description")),
+             product.get("brand"), _num(product.get("price")), product.get("thumbnail_url"),
+             product.get("mention_count"), _num(product.get("ad_ratio")), product.get("description")),
         )
         cid = cur.fetchone()[0]
     conn.commit()
