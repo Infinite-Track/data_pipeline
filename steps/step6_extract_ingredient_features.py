@@ -45,7 +45,10 @@ async def fetch_products_needing_analysis() -> list[dict]:
     return [
         doc async for doc in col.find(
             {"status": "READY_FOR_INCIAPI"},
-            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1, "ingredient_source": 1, "function": 1},
+            # 카탈로그 발행에 쓰는 필드까지 함께 읽는다(아래 _publish_inci_pg 주석 참고).
+            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1, "ingredient_source": 1, "function": 1,
+             "brand": 1, "category": 1, "price": 1, "description": 1, "thumbnail_url": 1,
+             "product_url": 1, "mention_count": 1, "ad_ratio": 1},
         )
     ]
 
@@ -96,19 +99,22 @@ def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
     return None
 
 
-def _publish_inci_pg(asin: str, name: str, raw: dict,
-                     ingredients: list[str] | None, ingredient_source: str | None) -> None:
-    """INCI 분석 원본을 Postgres product_inci_analysis(JSON)에 upsert하고, 성분도 product_ingredient에
-    재발행한다(best-effort, 자체 연결). 어드민 기능성(function)은 Mongo에만 두고 step8이 점수에 반영한다.
-    성분을 여기서도 발행하는 이유: 어드민이 NEED_MANUAL_REVIEW에서 성분을 직접 넣어 INGREDIENTS_ADDED로
-    올린 상품은 step5를 거치지 않아 Postgres 성분 행이 없다. step6이 어드민 이후 첫 단계라 여기서 보장한다."""
+def _publish_inci_pg(product: dict, raw: dict) -> None:
+    """INCI 분석 원본을 Postgres product_inci_analysis(JSON)에 upsert하고, 카탈로그·성분도 함께 발행한다
+    (best-effort, 자체 연결). 어드민 기능성(function)은 Mongo에만 두고 step8이 점수에 반영한다.
+
+    카탈로그·성분을 여기서도 발행하는 이유: 어드민이 NEED_MANUAL_REVIEW에서 성분을 직접 넣어
+    INGREDIENTS_ADDED로 올린 상품은 step5를 거치지 않아 Postgres에 행이 없거나 이름만 있는 최소 행이 된다.
+    step6이 어드민 이후 첫 단계라 여기서 상품 정보를 채워 넣는다(publish_catalog는 값이 있는 필드만 갱신)."""
+    asin = product["asin"]
+    ingredients, ingredient_source = product.get("ingredients"), product.get("ingredient_source")
     try:
         conn = pg.connect()
     except Exception as exc:
         logger.warning(f"[STEP6][PG] Postgres 연결 실패 — INCI 발행 건너뜀: {exc}")
         return
     try:
-        product_id = pg.get_or_create_product_id(conn, {"asin": asin, "name": name})
+        product_id = pg.publish_catalog(conn, product)
         pg.publish_inci_analysis(conn, product_id, raw, ingredients, ingredient_source)
         pg.publish_ingredients(conn, product_id, ingredients or [], ingredient_source)
     except Exception as exc:
@@ -131,9 +137,8 @@ async def _save_analysis(asin: str, name: str, raw: dict, product: dict) -> None
             "status": "READY_FOR_KEYWORD_ANALYSIS",
         }},
     )
-    # Postgres product_inci_analysis(JSON) + product_ingredient 직접 발행.
-    await asyncio.to_thread(_publish_inci_pg, asin, name, data,
-                            product.get("ingredients"), product.get("ingredient_source"))
+    # Postgres 카탈로그 + product_inci_analysis(JSON) + product_ingredient 직접 발행.
+    await asyncio.to_thread(_publish_inci_pg, product, data)
     logger.info(f"[STEP6][READY_FOR_KEYWORD_ANALYSIS] {name!r}: INCI 분석 저장 완료.")
 
 
