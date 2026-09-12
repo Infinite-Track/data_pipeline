@@ -10,6 +10,7 @@ videos 컬렉션에서 status=PENDING인 영상을 Gemini 3.5 Flash에 URL 그�
 
 출력은 raw_reviews 컬렉션에 저장하며, 영상 1개 → raw_reviews 문서는 "언급된 제품 개수"만큼 생긴다.
 product_name/content/ad_likelihood는 모두 제품 단위로 매겨진다 (제품마다 광고성 정도가 다를 수 있어서).
+review_summary는 content를 영어 1문장으로 줄인 것으로, Postgres youtuber_reviews.review_summary에 그대로 발행된다.
 
 product_name은 항상 영어로만 추출한다 (한국어 리뷰 영상이라 한글/영어가 섞여서 나오기 쉬운데,
 STEP3 브랜드·카테고리 추출, STEP4 Amazon 검색/그룹핑이 전부 이 값을 기준으로 동작하므로
@@ -59,12 +60,13 @@ def _build_prompt() -> str:
         "Also estimate, per product, how likely its mention is a paid ad / sponsored segment "
         "(explicit: 'gifted by', 'sponsored', 'discount code'; implicit: overly positive, brand-first language).\n\n"
         'Return raw JSON only, no markdown: an ARRAY where each element is:\n'
-        '{"product_name": string, "content": string, "ad_likelihood": float between 0.0 and 1.0}\n'
+        '{"product_name": string, "content": string, "review_summary": string, "ad_likelihood": float between 0.0 and 1.0}\n'
         "- product_name: the product name in ENGLISH ONLY (include brand). If the video shows/says "
         "both a Korean and an English name, use the English name. If only a Korean name is shown, "
         "romanize/translate it to the closest official English product name — never output Korean "
         "characters or a mix of Korean and English in this field.\n"
         "- content: a thorough description about THIS product only\n"
+        "- review_summary: ONE English sentence summarizing the reviewer's overall verdict on THIS product\n"
         "- ad_likelihood: 0.0 = definitely organic, 1.0 = definitely a paid ad\n"
         "If no skincare/beauty product is mentioned, return an empty array [].\n"
     )
@@ -98,6 +100,7 @@ def _summarize_video_sync(video_url: str) -> list[dict] | None:
                     results.append({
                         "product_name": str(name).strip(),
                         "content": str(item.get("content", "")).strip(),
+                        "review_summary": str(item.get("review_summary", "")).strip(),
                         "ad_likelihood": max(0.0, min(1.0, float(item.get("ad_likelihood", 0.0)))),
                     })
                 return results
@@ -112,9 +115,9 @@ async def _save_raw_reviews(video: dict, products: list[dict]) -> None:
     for product in products:
         record = {
             "video_id": video["video_id"],
-            "youtuber_id": video.get("youtuber_id"),
             "product_name": product["product_name"],
             "content": product["content"],
+            "review_summary": product["review_summary"],
             "ad_likelihood": product["ad_likelihood"],
         }
         await col.update_one(

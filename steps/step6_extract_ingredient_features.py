@@ -1,14 +1,15 @@
 """
 STEP 6 · 성분 특징 추출 (상품의 특징/이론 추가)
 
-step5에서 status=READY_FOR_ANALYSIS로 남긴(성분을 충분히 찾은) 상품만 가져와
+어드민이 기능성(function) 입력까지 마쳐 status=READY_FOR_INCIAPI로 넘긴 상품만 가져와
 INCI API(POST /analyze)에 전달해 성분 기반 효능·안전성 분석 데이터를 받아온다.
-(필드 의미는 description/INCI_FIELD_REFERENCE.txt 참고)
+(step5 자동추출 → INGREDIENTS_ADDED → 어드민 안전나라 확인·function 입력 → READY_FOR_INCIAPI)
+(응답 필드 의미는 INCI API 문서 https://inciapi.com/docs 참고)
 
 원본 응답은 products.inciapi_raw_data에 그대로 저장한다 (요약/가공은 다음 step7 담당).
 API 응답에 이미 포함된 coverage(성분 인식 비율, 0~1)를 inci_coverage로 그대로 저장해
 step7이 "성분 데이터를 얼마나 신뢰할 수 있는지" 가중치로 쓸 수 있게 한다.
-분석까지 끝나면 status를 COMPLETE로 갱신한다 (성분 개수 기준 필터링은 STEP5가 이미 끝냈으므로
+분석까지 끝나면 status를 READY_FOR_KEYWORD_ANALYSIS로 갱신한다 (성분 개수 기준 필터링은 STEP5가 이미 끝냈으므로
 여기서는 다시 확인하지 않는다).
 """
 import asyncio
@@ -22,6 +23,7 @@ from loguru import logger
 
 from steps.db import get_collection
 from steps.step5_extract_ingredients import MIN_INGREDIENTS_FOR_ANALYSIS
+from steps import postgres_publish as pg
 
 load_dotenv()
 
@@ -42,8 +44,8 @@ async def fetch_products_needing_analysis() -> list[dict]:
     col = _get_products_collection()
     return [
         doc async for doc in col.find(
-            {"status": "READY_FOR_ANALYSIS"},
-            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1},
+            {"status": "READY_FOR_INCIAPI"},
+            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1, "function": 1},
         )
     ]
 
@@ -52,8 +54,8 @@ def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
     """INCI API를 호출한다. 실패(오류 상태코드/예외)하면 MAX_ATTEMPTS번까지 재시도한다.
 
     성분이 MIN_INGREDIENTS_FOR_ANALYSIS 미만이면 호출 자체를 하지 않는다. STEP5가 이미
-    이 기준으로 걸러서(READY_FOR_ANALYSIS만 STEP6에 넘어옴) 정상적으로는 여기 걸릴 일이
-    없어야 하지만, 이 함수만 따로 호출되는 경우에도 안전하도록 방어적으로 한 번 더 확인한다.
+    이 기준으로 걸러서(충분한 것만 INGREDIENTS_ADDED→…→READY_FOR_INCIAPI로 넘어옴) 정상적으로는
+    여기 걸릴 일이 없어야 하지만, 이 함수만 따로 호출되는 경우에도 안전하도록 방어적으로 확인한다.
     """
     if len(ingredients) < MIN_INGREDIENTS_FOR_ANALYSIS:
         logger.warning(
@@ -94,20 +96,40 @@ def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
     return None
 
 
-async def _save_analysis(asin: str, name: str, raw: dict) -> None:
+def _publish_efficacy_pg(asin: str, name: str, efficacy, functions: list[str] | None) -> None:
+    """INCI 효능(efficacySummary) + 어드민 기능성(function)을 Postgres product_efficacies에
+    효능당 행 1개로 발행(best-effort, 자체 연결)."""
+    try:
+        conn = pg.connect()
+    except Exception as exc:
+        logger.warning(f"[STEP6][PG] Postgres 연결 실패 — 효능 발행 건너뜀: {exc}")
+        return
+    try:
+        pg.ensure_catalog_schema(conn)
+        pg.ensure_efficacies_schema(conn)
+        pg.publish_efficacy(conn, {"asin": asin, "name": name}, efficacy, functions)
+    except Exception as exc:
+        logger.warning(f"[STEP6][PG] 효능 발행 실패 asin={asin}: {exc}")
+    finally:
+        conn.close()
+
+
+async def _save_analysis(asin: str, name: str, raw: dict, functions: list[str] | None) -> None:
     col = _get_products_collection()
     data = raw.get("analysis") or raw
     await col.update_one(
         {"asin": asin},
         {"$set": {
+            # coverage 등은 inciapi_raw_data 안에 이미 있으므로 별도 필드로 중복 저장하지 않는다.
             "inciapi_raw_data": data,
-            # coverage(성분 인식 비율, 0~1)는 API가 이미 계산해서 주므로 직접 재계산하지 않는다.
-            "inci_coverage": data.get("coverage"),
             "analyzed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "status": "COMPLETE",
+            # INCI 분석 후 step7(화해 리뷰 키워드)로 넘긴다.
+            "status": "READY_FOR_KEYWORD_ANALYSIS",
         }},
     )
-    logger.info(f"[STEP6][COMPLETE] {name!r}: INCI 분석 저장 완료.")
+    # Postgres product_efficacies 직접 발행(INCI 효능 target + 어드민 기능성 function → 효능당 행 1개).
+    await asyncio.to_thread(_publish_efficacy_pg, asin, name, data.get("efficacySummary"), functions)
+    logger.info(f"[STEP6][READY_FOR_KEYWORD_ANALYSIS] {name!r}: INCI 분석 저장 완료.")
 
 
 async def run() -> None:
@@ -130,7 +152,7 @@ async def run() -> None:
         if not raw:
             continue
 
-        await _save_analysis(product["asin"], name, raw)
+        await _save_analysis(product["asin"], name, raw, product.get("function"))
 
 
 if __name__ == "__main__":

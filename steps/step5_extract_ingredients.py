@@ -1,37 +1,39 @@
 """
 STEP 5 · 성분 추출 (상품에 성분 추가)
 
-Gemini + Google 검색 그라운딩으로 공식 소스에서 성분(INCI)을 수집한다.
-(Amazon Creators API는 성분 데이터를 제공하지 않으므로 성분은 이 경로로 받는다.)
+Gemini + Google 검색 그라운딩으로 공식 소스에서 성분(INCI)·name_kr·올리브영 prdt_no를 받는다.
+prdt_no가 있으면 올리브영 글로벌 상품정보 API를 우선 호출해 정형 '045' 전성분을 쓴다
+(그라운딩 텍스트보다 신뢰도 높음). OY가 없거나 요약본(truncated)이면 그라운딩 성분을 쓴다.
+(Amazon Creators API는 성분을 제공하지 않으므로 성분은 이 경로로 받는다.)
 
-    - 우선순위 1: 브랜드 공식 사이트
-    - 우선순위 2: 올리브영(Olive Young) 상품 페이지
+    - 우선순위 1: 올리브영 글로벌 API('045', prdt_no 있을 때) — 정형 데이터
+    - 우선순위 2: Gemini 그라운딩(브랜드 공식 사이트 / 올리브영 페이지)
     - 리뷰/블로그 등 3rd party 콘텐츠는 사용하지 않는다 (성분 정보 신뢰도 문제)
-
-Gemini가 성분을 못 찾거나 부족하면(MIN_INGREDIENTS_FOR_ANALYSIS 미만) incidecoder.com을
-폴백으로 조회한다. incidecoder는 성분 전문 DB(과학자 편집)로, 공식 소스보다는 아래 순위지만
-리뷰/블로그보다 신뢰도가 높고 requests로 접근 가능하다. 이 경로로 채운 성분은
-ingredient_source="incidecoder"로 태깅해 추적한다. (올리브영 직접 스크래핑은 WAF로 차단됨.)
+    - OY '046'(식약처 기능성 심사 여부)은 mfds_functional 힌트로 저장(어드민 기능성 확인 보조)
 
 products 컬렉션에서 status=PENDING인 상품의 성분을 찾아 채워 넣고, 결과에 따라
-status를 다음 중 하나로 갱신한다 (이후 STEP6은 READY_FOR_ANALYSIS만 가져다 쓴다).
+status를 다음 중 하나로 갱신한다. 이후 흐름은 어드민 수동 검증(성분/기능성)과 연결된다.
 
-    - NOT_FOUND              : 공식 사이트/올리브영/incidecoder 어디서도 성분을 찾지 못함
-    - INSUFFICIENT_INGREDIENTS: 성분은 찾았지만 MIN_INGREDIENTS_FOR_ANALYSIS(10개) 미만이라
-                                INCI 분석 신뢰도가 낮음
-    - READY_FOR_ANALYSIS     : 성분을 충분히 찾음 → STEP6의 INCI API 분석 대상
+    - NEED_MANUAL_REVIEW      : 자동 추출 실패 → 어드민이 수동으로 성분 입력
+                                (어드민: INGREDIENTS_ADDED 또는 NOTFOUND로 갱신)
+    - INSUFFICIENT_INGREDIENTS: 성분은 찾았지만 MIN_INGREDIENTS_FOR_ANALYSIS 미만 → 사용 안 함(드롭)
+    - INGREDIENTS_ADDED       : 성분을 충분히 찾음 → 어드민이 의약품안전나라 기능성 확인 후
+                                function 입력(어드민: READY_FOR_INCIAPI로 갱신) → STEP6 대상
+
+한국 상품이면 성분 크롤링 직후 Postgres 서빙 테이블(products_catalog/products_url/
+product_ingredients/youtuber_reviews)에 발행한다.
 """
 import asyncio
-import datetime
-import html
 import re
 
-import requests
 from loguru import logger
 
 from steps.db import get_collection
 from steps.gemini_client import get_client
 from steps.llm_utils import parse_json_response
+from steps import postgres_publish as pg
+from steps import youtuber_reviews
+from steps import oliveyoung_client
 
 try:
     from google.genai import types as genai_types
@@ -49,16 +51,6 @@ MIN_INGREDIENTS_FOR_ANALYSIS = 5
 
 # 동시에 처리할 상품 수(비동기 병렬).
 CONCURRENCY = 8
-
-# incidecoder 폴백 설정.
-INCIDECODER_BASE = "https://incidecoder.com"
-INCIDECODER_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124 Safari/537.36"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
-}
 
 
 def _get_products_collection():
@@ -83,13 +75,24 @@ def _build_prompt(name: str, brand: str | None) -> str:
         "Priority order for the source:\n"
         "  1. The brand's official website\n"
         "  2. Olive Young (oliveyoung.co.kr / global.oliveyoung.com) product page\n"
-        "Do NOT use user reviews, blogs, or unofficial retailer descriptions.\n\n"
+        "Do NOT use user reviews, blogs, or unofficial retailer descriptions.\n"
+        "You MUST attribute the ingredient list to source #1 (official_site) or #2 (oliveyoung) and set "
+        "'source' to exactly one of those. If you cannot confirm the list came from the brand's official "
+        "site or Olive Young, return ingredients: [] and source: null (do NOT guess from other sites).\n\n"
+        "Also find the product's official KOREAN product name (한글 제품명) for name_kr "
+        "(check the brand site / Olive Young / Hwahae). If you cannot determine it, use null.\n"
+        "Also find this product's Olive Young GLOBAL product number for prdt_no — the prdtNo in a "
+        "global.oliveyoung.com/product/detail?prdtNo=... URL (format: 'GA' followed by digits, "
+        "e.g. GA240825052). If you cannot find it, use null.\n\n"
         "Return raw JSON only:\n"
         "{\n"
         '  "ingredients": [full INCI ingredient list, in label order, as individual strings],\n'
-        '  "source": "official_site" | "oliveyoung" | null\n'
+        '  "source": "official_site" | "oliveyoung" | null,\n'
+        '  "name_kr": "<official Korean product name>" or null,\n'
+        '  "prdt_no": "<Olive Young Global prdtNo, e.g. GA240825052>" or null\n'
         "}\n"
-        "If the ingredient list cannot be found on either source, return ingredients: [] and source: null.\n"
+        "If the ingredient list cannot be found on either source, return ingredients: [] and source: null "
+        "(still fill name_kr and prdt_no if you can find them).\n"
     )
 
 
@@ -112,103 +115,139 @@ def _extract_ingredients_sync(name: str, brand: str | None) -> dict | None:
             if not isinstance(parsed, dict):
                 continue
 
+            name_kr = parsed.get("name_kr")
+            name_kr = name_kr.strip() if isinstance(name_kr, str) and name_kr.strip() else None
+            prdt_no = parsed.get("prdt_no")
+            prdt_no = prdt_no.strip() if isinstance(prdt_no, str) and prdt_no.strip() else None
+
             ingredients = parsed.get("ingredients") or []
             if isinstance(ingredients, str):
                 ingredients = [i.strip() for i in re.split(r"[,\n]", ingredients) if i.strip()]
             if not ingredients:
-                return {"ingredients": [], "source": None}
+                return {"ingredients": [], "source": None, "name_kr": name_kr, "prdt_no": prdt_no}
 
             source = parsed.get("source")
-            return {"ingredients": ingredients, "source": source if source in ALLOWED_SOURCES else None}
+            if source not in ALLOWED_SOURCES:
+                # 공식사이트/올리브영 출처로 확인되지 않은 성분은 신뢰하지 않는다.
+                # (리뷰/블로그 등 비공식 소스 혼입 방지) → 성분 버리고 수동 검토로 넘긴다.
+                logger.info(f"[STEP5][SRC?] {name!r}: 출처 미확인(source={source!r}) — 성분 폐기")
+                return {"ingredients": [], "source": None, "name_kr": name_kr, "prdt_no": prdt_no}
+            return {"ingredients": ingredients, "source": source,
+                    "name_kr": name_kr, "prdt_no": prdt_no}
         except Exception as exc:
             logger.warning(f"[STEP5] {name!r} 시도 {attempt + 1}/{MAX_ATTEMPTS} 실패: {exc}")
     return None
 
 
-def _fetch_from_incidecoder_sync(name: str) -> list[str]:
-    """incidecoder에서 제품명을 검색해 첫 매칭 상품의 라벨순 전성분을 가져온다.
-
-    실패(차단/미검색/파싱실패)하면 빈 리스트를 반환한다. 공식 소스로 성분을 못 구했을
-    때만 호출하는 폴백이므로, 예외는 조용히 삼키고 로그만 남긴다.
-    """
-    try:
-        search = requests.get(
-            f"{INCIDECODER_BASE}/search", params={"query": name},
-            headers=INCIDECODER_HEADERS, timeout=15,
-        )
-        if search.status_code != 200:
-            return []
-        product_links = re.findall(r'href="(/products/[^"]+)"', search.text)
-        if not product_links:
-            return []
-
-        page = requests.get(
-            INCIDECODER_BASE + product_links[0], headers=INCIDECODER_HEADERS, timeout=15,
-        )
-        if page.status_code != 200:
-            return []
-        # 성분이 페이지에 두 번(요약 리스트 + 상세 표) 나오므로 라벨순 요약 블록만 파싱한다.
-        block = re.search(
-            r'<div[^>]*class="[^"]*ingredlist[^"]*"[^>]*>(.*?)</div>', page.text, re.S,
-        )
-        if not block:
-            return []
-        names = re.findall(
-            r'href="/ingredients/[^"]+"[^>]*>([^<]+)</a>', block.group(1),
-        )
-        # zero-width space 등 잔여문자 정리.
-        return [html.unescape(n).replace("​", "").strip() for n in names if n.strip()]
-    except requests.exceptions.RequestException as exc:
-        logger.warning(f"[STEP5][incidecoder] {name!r} 조회 실패: {exc}")
-        return []
-
-
-def _extract_with_fallback_sync(name: str, brand: str | None) -> dict | None:
-    """Gemini(공식 소스) 우선, 부족하면 incidecoder 폴백으로 보강한다.
-
-    반환: {"ingredients", "source"} 또는 None(둘 다 일시 실패 → PENDING 유지 재시도).
-    공식 소스로 충분(>=MIN)하면 그대로 쓰고, incidecoder는 그보다 많이 찾은 경우에만 채택한다.
-    """
+def _extract_full_sync(name: str, brand: str | None) -> dict | None:
+    """Gemini 그라운딩으로 성분·prdt_no·name_kr을 받고, prdt_no가 있으면 OliveYoung API를
+    우선 사용한다(정형 '045' 필드라 그라운딩보다 신뢰도 높음). OY가 없거나 요약본(truncated)/
+    빈값이면 그라운딩 성분을 그대로 쓴다. '046' 기능성은 mfds_functional 힌트로 함께 반환.
+    (틀린 prdt_no면 OY가 빈값/에러 → 자연히 그라운딩으로 폴백되어 자기검증된다.)"""
     gemini = _extract_ingredients_sync(name, brand)
-    gemini_ings = gemini["ingredients"] if gemini else []
-    if len(gemini_ings) >= MIN_INGREDIENTS_FOR_ANALYSIS:
-        return gemini
-
-    inci_ings = _fetch_from_incidecoder_sync(name)
-    if len(inci_ings) > len(gemini_ings):
-        return {"ingredients": inci_ings, "source": "incidecoder"}
-
-    # 폴백도 개선 못함: Gemini 결과(빈/부족)를 그대로 두되, Gemini가 일시실패(None)였다면
-    # None을 유지해 다음 실행에 재시도한다.
+    if gemini is None:
+        return None  # 일시 실패 → PENDING 유지 재시도
+    prdt_no = gemini.get("prdt_no")
+    if prdt_no:
+        oy = oliveyoung_client.get_ingredients(prdt_no)
+        if oy and oy["ingredients"] and not oy["truncated"]:
+            logger.info(f"[STEP5][OY] {name!r}: OliveYoung {prdt_no} 성분 {len(oy['ingredients'])}개 사용")
+            return {"ingredients": oy["ingredients"], "source": "oliveyoung",
+                    "name_kr": gemini.get("name_kr"), "mfds_functional": oy.get("functional")}
     return gemini
+
+
+def _publish_product_sync(product: dict, yt_rows: list[dict]) -> None:
+    """한국 상품을 Postgres 서빙 테이블에 발행: catalog + url + ingredients + youtuber_reviews.
+    step5는 동시 실행되므로 호출마다 자체 연결을 연다(psycopg2 연결 공유 불가). best-effort."""
+    try:
+        conn = pg.connect()
+    except Exception as exc:
+        logger.warning(f"[STEP5][PG] Postgres 연결 실패 — 발행 건너뜀: {exc}")
+        return
+    try:
+        pg.ensure_catalog_schema(conn)
+        pg.ensure_ingredients_schema(conn)
+        pg.ensure_youtuber_reviews_schema(conn)
+        pg.publish_catalog(conn, product)          # products_catalog + products_url (authoritative)
+        pg.publish_ingredients(conn, product,
+                               product.get("ingredients") or [], product.get("ingredient_source"))
+        pg.publish_youtuber_reviews(conn, product["asin"], yt_rows)
+    except Exception as exc:
+        logger.warning(f"[STEP5][PG] 발행 실패 asin={product.get('asin')}: {exc}")
+    finally:
+        conn.close()
+
+
+async def _publish_product_pg(asin: str) -> None:
+    """신규 한국 상품을 Postgres에 발행한다(Mongo 상품 doc + 유튜버 리뷰 행을 모아서)."""
+    product = await _get_products_collection().find_one(
+        {"asin": asin},
+        {"_id": 0, "asin": 1, "name": 1, "brand": 1, "category": 1, "price": 1,
+         "thumbnail_url": 1, "description": 1, "product_url": 1, "mention_count": 1,
+         "ad_ratio": 1, "ingredients": 1, "ingredient_source": 1},
+    )
+    if not product:
+        return
+    rows = await youtuber_reviews.gather_rows(asin)
+    await asyncio.to_thread(_publish_product_sync, product, rows)
+
+
+_CONCENTRATION_RE = re.compile(
+    r"\s*[\(\[]?\s*\d[\d,.]*\s*(?:%|ppm|퍼센트)\s*[\)\]]?\s*$", re.IGNORECASE
+)
+
+
+def _strip_concentration(name: str) -> str:
+    """성분명 뒤에 붙은 함량 표기(%/ppm)를 제거해 성분명만 남긴다.
+    예: '나이아신아마이드 5%'→'나이아신아마이드', 'Bakuchiol 10,000ppm'→'Bakuchiol',
+        'Adenosine (0.04%)'→'Adenosine'.
+    앞쪽 숫자('1,2-Hexanediol')나 %/ppm 없는 끝 숫자('Ceramide 3')는 건드리지 않는다(뒤 함량만 매칭)."""
+    return _CONCENTRATION_RE.sub("", name).strip()
 
 
 async def _save_result(asin: str, name: str, result: dict | None) -> None:
     col = _get_products_collection()
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     if result is None:
         # 일시적 실패(Gemini 예외/미설정)는 상태를 바꾸지 않고 PENDING으로 남겨 다음 실행에 재시도한다.
         logger.warning(f"[STEP5][RETRY] {name!r}: 추출 일시 실패 — PENDING 유지(다음 실행에 재시도).")
         return
 
+    # 성분명 뒤 함량 표기를 제거해 성분명만 저장한다(빈 문자열은 버림).
+    result["ingredients"] = [c for i in (result.get("ingredients") or [])
+                             if (c := _strip_concentration(i))]
+
+    # name_kr(화해 매칭)·mfds_functional(OY '046', 어드민 기능성 확인 힌트)은 찾았으면 항상 저장.
+    base = {}
+    if result.get("name_kr"):
+        base["name_kr"] = result["name_kr"]
+    if result.get("mfds_functional"):
+        base["mfds_functional"] = result["mfds_functional"]
+
     if not result["ingredients"]:
-        await col.update_one({"asin": asin}, {"$set": {"status": "NOT_FOUND"}})
-        logger.warning(f"[STEP5][NOT_FOUND] {name!r}: 공식 사이트/올리브영에서 성분을 찾지 못함.")
+        # 자동 추출 실패 → 어드민이 수동으로 성분을 넣도록 넘긴다(NEED_MANUAL_REVIEW).
+        await col.update_one({"asin": asin}, {"$set": {**base, "status": "NEED_MANUAL_REVIEW"}})
+        # 성분이 없어도 한국 상품이므로 카탈로그/URL/유튜버리뷰는 발행한다(성분 행만 비어있음).
+        await _publish_product_pg(asin)
+        logger.warning(f"[STEP5][NEED_MANUAL_REVIEW] {name!r}: 자동 성분추출 실패 — 어드민 수동 입력 대기.")
         return
 
     ingredient_count = len(result["ingredients"])
-    status = "READY_FOR_ANALYSIS" if ingredient_count >= MIN_INGREDIENTS_FOR_ANALYSIS else "INSUFFICIENT_INGREDIENTS"
+    # 충분히 찾음 → 어드민 기능성(안전나라) 입력 대기(INGREDIENTS_ADDED). 부족하면 사용 안 함(드롭).
+    status = "INGREDIENTS_ADDED" if ingredient_count >= MIN_INGREDIENTS_FOR_ANALYSIS else "INSUFFICIENT_INGREDIENTS"
 
     await col.update_one(
         {"asin": asin},
         {"$set": {
+            **base,
             "ingredients": result["ingredients"],
             "ingredient_source": result["source"],
             "status": status,
-            "ingredients_fetched_at": now,
         }},
     )
+    # Postgres 서빙 발행(catalog + url + ingredients + youtuber_reviews).
+    await _publish_product_pg(asin)
     logger.info(f"[STEP5][{status}] {name!r}: 성분 {ingredient_count}개 ({result['source']})")
 
 
@@ -225,7 +264,7 @@ async def run() -> None:
             name, brand = product["name"], product.get("brand")
             try:
                 result = await asyncio.wait_for(
-                    asyncio.to_thread(_extract_with_fallback_sync, name, brand), timeout=150
+                    asyncio.to_thread(_extract_full_sync, name, brand), timeout=150
                 )
             except asyncio.TimeoutError:
                 # Gemini 호출이 멈춘 경우: 일시 실패로 보고 PENDING 유지(다음 실행 재시도).
