@@ -75,11 +75,36 @@ async def run_step9() -> None:
     await step9.run()
 
 
+@task(name="preflight", task_run_name="preflight")
+async def run_preflight() -> None:
+    """실행 전 안전장치: Mongo 연결과 Postgres 스키마(파이프라인이 쓰는 테이블·컬럼)를 확인한다.
+    하나라도 안 맞으면 어떤 step도 돌기 전에 예외로 중단한다 — 운영 DB 스키마가 파이프라인과 다를 때
+    DDL/INSERT로 흔적을 남기지 않기 위함. 통과 조건은 steps/postgres_publish.REQUIRED_SCHEMA."""
+    from steps import postgres_publish as pg
+    from steps.db import get_collection
+
+    await get_collection("products").estimated_document_count()  # Mongo 연결 확인
+    conn = pg.connect()
+    try:
+        problems = pg.preflight_schema(conn)
+    finally:
+        conn.close()
+    if problems:
+        for p in problems:
+            logger.error(f"[PREFLIGHT] {p}")
+        raise RuntimeError(f"Postgres 스키마가 파이프라인과 맞지 않아 실행을 중단합니다 ({len(problems)}건). "
+                           "postgres_export/prod_schema_2026-09-12.md 참고")
+    logger.info("[PREFLIGHT] Mongo 연결·Postgres 스키마 확인 통과")
+
+
 @flow(name="kbeauty-pipeline", flow_run_name=lambda: f"pipeline-{datetime.now():%Y%m%d-%H%M}")
 async def main() -> None:
     logger.info("=" * 50)
     logger.info("파이프라인 v2 시작")
     logger.info("=" * 50)
+
+    # STEP 0 · 실행 전 검사 (실패 시 아무 step도 돌지 않음)
+    await run_preflight()
 
     # STEP 1 · 채널별 신규 영상 판별 (YouTube Data API + 규칙 필터 + LLM 리뷰영상 판별)
     await run_step1()

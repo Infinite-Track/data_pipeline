@@ -17,6 +17,45 @@ def connect():
     return psycopg2.connect(os.environ["POSTGRES_URI"])
 
 
+# 파이프라인이 실제로 INSERT/UPDATE 하는 테이블과 컬럼. 실행 전 preflight_schema()로 대상 DB에 전부 있는지
+# 확인한다 — 운영 DB(Flyway 관리)가 이 형태와 다르면 ensure_*의 DDL이 스키마를 건드리고 INSERT는 실패하므로,
+# 아무것도 쓰기 전에 중단하기 위한 검사.
+REQUIRED_SCHEMA: dict[str, list[str]] = {
+    "products_catalog": ["id", "asin", "name", "category", "brand", "price", "thumbnail_url",
+                         "mention_count", "ad_ratio", "description", "created_at"],
+    "products_url": ["id", "product_catalog_id", "url", "domain"],
+    "youtuber_reviews": ["id", "asin", "video_url", "youtuber_name", "review_summary"],
+    "product_ingredients": ["id", "product_catalog_id", "raw_name", "inci_order", "source"],
+    "product_efficacies": ["id", "product_catalog_id", "content"],
+    "reviews_keyword": ["id", "product_catalog_id", "keyword", "multiple"],
+    "products_normalized": ["asin", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
+                            "sensitivity", "melanin", "water", "rough", "red_spot", "skin_type_dry",
+                            "skin_type_combination", "skin_type_normal", "skin_type_oily", "allergen_risk",
+                            "pregnancy_risk", "comedogenicity_risk", "fragrance_risk", "irritancy_risk",
+                            "summarized_at"],
+}
+
+
+def preflight_schema(conn) -> list[str]:
+    """대상 Postgres에 REQUIRED_SCHEMA의 테이블·컬럼이 전부 있는지 확인하고 문제 목록을 반환한다(빈 목록 = 통과).
+    읽기 전용(information_schema 조회만). 테이블이 아예 없는 경우도 문제로 본다 — 운영 DB에 파이프라인이
+    테이블을 만들어 넣는 것은 스키마 소유자(백엔드 Flyway)와 충돌하므로 허용하지 않는다."""
+    problems: list[str] = []
+    with conn.cursor() as cur:
+        cur.execute("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'")
+        have: dict[str, set[str]] = {}
+        for table, column in cur.fetchall():
+            have.setdefault(table, set()).add(column)
+    for table, cols in REQUIRED_SCHEMA.items():
+        if table not in have:
+            problems.append(f"테이블 없음: {table}")
+            continue
+        missing = [c for c in cols if c not in have[table]]
+        if missing:
+            problems.append(f"{table}: 컬럼 없음 {missing}")
+    return problems
+
+
 _CATEGORIES = ("Cleansers", "Toners", "Treatments", "Moisturizers", "Sunscreens", "Face masks")
 _CATEGORY_BY_LOWER = {c.lower(): c for c in _CATEGORIES}
 
