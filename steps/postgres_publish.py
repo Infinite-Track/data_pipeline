@@ -17,6 +17,18 @@ def connect():
     return psycopg2.connect(os.environ["POSTGRES_URI"])
 
 
+_CATEGORIES = ("Cleansers", "Toners", "Treatments", "Moisturizers", "Sunscreens", "Face masks")
+_CATEGORY_BY_LOWER = {c.lower(): c for c in _CATEGORIES}
+
+
+def _canon_category(value):
+    """카테고리 표기 정규화. 어드민(Spring)은 소문자('treatments')로, 파이프라인·운영 Postgres는
+    'Treatments' 표기를 써서 Postgres에 대소문자가 섞였다. 허용 6종은 표준 표기로, 그 외는 그대로."""
+    if not value:
+        return value
+    return _CATEGORY_BY_LOWER.get(str(value).strip().lower(), value)
+
+
 def _num(value):
     """Mongo 숫자 → Postgres용 float. 어드민(Spring)이 price 등을 BSON Decimal128로 저장하는데
     psycopg2는 Decimal128을 변환하지 못해("can't adapt type 'Decimal128'") 발행이 통째로 실패한다."""
@@ -69,7 +81,7 @@ def upsert_catalog(conn, product: dict) -> int:
                    mention_count = EXCLUDED.mention_count, ad_ratio = EXCLUDED.ad_ratio,
                    description = EXCLUDED.description
                RETURNING id""",
-            (product["asin"], product.get("name"), product.get("category"),
+            (product["asin"], product.get("name"), _canon_category(product.get("category")),
              product.get("brand"), _num(product.get("price")), product.get("thumbnail_url"),
              None if product.get("mention_count") is None else int(product["mention_count"]),  # bson Int64 → int
              _num(product.get("ad_ratio")), product.get("description")),
