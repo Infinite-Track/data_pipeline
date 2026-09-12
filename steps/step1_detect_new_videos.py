@@ -77,7 +77,11 @@ def _get_videos_collection():
 
 async def ensure_indexes() -> None:
     videos_col = _get_videos_collection()
-    await videos_col.create_index("video_id", unique=True)
+    # 어드민이 같은 키의 유니크 인덱스를 다른 이름(uk_videos_video_id)으로 이미 만들어 둔 경우가 있어,
+    # 이름이 아니라 "video_id 유니크 인덱스 존재 여부"로 판단한다 (이름이 다르면 create_index가 code 85로 실패).
+    existing = await videos_col.index_information()
+    if not any(v.get("key") == [("video_id", 1)] and v.get("unique") for v in existing.values()):
+        await videos_col.create_index("video_id", unique=True)
     logger.info("[STEP1] videos.video_id 유니크 인덱스 확인 완료.")
 
 
@@ -222,6 +226,7 @@ async def _save_pending_video(channel_id: str, item: dict) -> None:
         "youtuber_id": channel_id,
         "title": snippet.get("title", ""),
         "url": f"https://www.youtube.com/watch?v={video_id}",
+        "published_at": snippet.get("publishedAt"),  # 유튜브 게시 시각(RFC3339, UTC)
         "status": "PENDING",
     }
     await videos_col.update_one({"video_id": video_id}, {"$set": record}, upsert=True)
@@ -272,7 +277,7 @@ async def run() -> None:
             logger.warning(f"[STEP1] {channel.get('channel_name')}: uploads 재생목록을 찾을 수 없습니다.")
             continue
 
-        # last_checked_at이 없으면 30일 전부터 조회 (최초 등록 채널 대비)
+        # last_checked_at이 없으면 90일 전부터 조회 (최초 등록 채널 대비)
         published_after = channel.get("last_checked_at") or (
             datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=90)
         ).isoformat()

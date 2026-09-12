@@ -21,9 +21,9 @@ import steps.step3_validate_reviews as step3
 import steps.step4_analyze_products as step4
 import steps.step5_extract_ingredients as step5
 import steps.step6_extract_ingredient_features as step6
-import steps.step7_summarize_products as step7
-import steps.step8_normalize_scores as step8
-import steps.step9_publish_catalog as step9
+import steps.step7_crawl_review_keywords as step7
+import steps.step8_summarize_products as step8
+import steps.step9_normalize_scores as step9
 
 load_dotenv()
 
@@ -60,17 +60,17 @@ async def run_step6() -> None:
     await step6.run()
 
 
-@task(name="step7_summarize_products", task_run_name="step7-run")
+@task(name="step7_crawl_review_keywords", task_run_name="step7-run")
 async def run_step7() -> None:
     await step7.run()
 
 
-@task(name="step8_normalize_scores", task_run_name="step8-run")
+@task(name="step8_summarize_products", task_run_name="step8-run")
 async def run_step8() -> None:
     await step8.run()
 
 
-@task(name="step9_publish_catalog", task_run_name="step9-run")
+@task(name="step9_normalize_scores", task_run_name="step9-run")
 async def run_step9() -> None:
     await step9.run()
 
@@ -99,13 +99,13 @@ async def main() -> None:
     # STEP 6 · INCI API로 성분 특징 분석 → products.inciapi_raw_data 저장
     await run_step6()
 
-    # STEP 7 · 11개 효능 + 피부타입 적합도 + 위험도 점수 산출 → products_summarized 저장
+    # STEP 7 · 화해 리뷰 크롤링 + Kiwi/lexicon 키워드 분석 → Postgres reviews_keyword 저장
     await run_step7()
 
-    # STEP 8 · 효능 점수 고정 기준 정규화(0~100) → products_normalized 저장
+    # STEP 8 · 11개 효능 + 피부타입 적합도 + 위험도 점수 산출 → products_summarized 저장
     await run_step8()
 
-    # STEP 9 · Mongo → PostgreSQL 발행 (products_catalog / products_url / products_normalized, asin 조인)
+    # STEP 9 · 효능 점수 고정 기준 정규화(0~100) → products_normalized 저장
     await run_step9()
 
     logger.info("=" * 50)

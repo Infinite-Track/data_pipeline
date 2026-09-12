@@ -1,4 +1,4 @@
-name: dataPipeline_ex
+name: seoulection
 prefect-version: 3.7.8
 
 build: null
@@ -15,10 +15,21 @@ deployments:
       name: seoulection-docker-pool
       job_variables:
         image: seoulection-pipeline:latest
-        image_pull_policy: Never
+        image_pull_policy: Never    # 로컬 build 이미지 사용(레지스트리 X). ECR 쓰면 IfNotPresent/Always
+        # 아래 env는 `prefect deploy` 시점의 셸 환경변수에서 채워진다({{ $VAR }}) → 시크릿이 git에 안 남음.
+        # 배포 전:  set -a; source .env; set +a   로 .env를 셸에 로드.
+        # ★ 컨테이너에서 DB에 닿으려면 MONGODB_URI/POSTGRES_URI의 host를 localhost →
+        #   host.docker.internal(로컬 도커) 또는 실제 DB주소(EC2)로 바꿔 export한 뒤 deploy.
         env:
-          MONGODB_URI: mongodb://host.docker.internal:27017
-          MONGODB_DB_NAME: seoulection
+          MONGODB_URI: "{{ $MONGODB_URI }}"
+          MONGODB_DB_NAME: "{{ $MONGODB_DB_NAME }}"
+          POSTGRES_URI: "{{ $POSTGRES_URI }}"
+          GEMINI_API_KEY: "{{ $GEMINI_API_KEY }}"
+          INCI_API_KEY: "{{ $INCI_API_KEY }}"
+          YOUTUBE_API_KEY: "{{ $YOUTUBE_API_KEY }}"
+          SERPER_API_KEY: "{{ $SERPER_API_KEY }}"        # step4 ASIN 해결(구글검색 API). Amazon API는 더 이상 사용 안 함.
+          AMAZON_PARTNER_TAG: "{{ $AMAZON_PARTNER_TAG }}"  # 제휴 링크 조립용
+          # JAVA_HOME은 이미지가 /opt/java로 이미 설정하므로 넣지 않는다.
     schedule:
       cron: "10 18 * * *"
       timezone: Asia/Seoul

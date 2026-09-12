@@ -7,3 +7,5 @@ prefect==3.7.8
 requests==2.34.2
 google-genai==2.13.0
 psycopg2-binary==2.9.9
+kiwipiepy
+pyspark
