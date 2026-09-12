@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+# Debian 12(bookworm) 고정: 3.11-slim이 Debian 13(trixie)로 올라가면서 openjdk-17 패키지가 사라져 빌드가 깨짐(2026-09).
+FROM python:3.11-slim-bookworm
 
 # PySpark용 JVM (step7·step9 Spark). 심볼릭 링크로 JAVA_HOME을 아키텍처(amd64/arm64) 무관하게 고정.
 RUN apt-get update \

@@ -45,7 +45,7 @@ async def fetch_products_needing_analysis() -> list[dict]:
     return [
         doc async for doc in col.find(
             {"status": "READY_FOR_INCIAPI"},
-            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1, "function": 1},
+            {"_id": 0, "asin": 1, "name": 1, "ingredients": 1, "ingredient_source": 1, "function": 1},
         )
     ]
 
@@ -96,9 +96,12 @@ def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
     return None
 
 
-def _publish_efficacy_pg(asin: str, name: str, efficacy, functions: list[str] | None) -> None:
+def _publish_efficacy_pg(asin: str, name: str, efficacy, functions: list[str] | None,
+                         ingredients: list[str] | None, ingredient_source: str | None) -> None:
     """INCI 효능(efficacySummary) + 어드민 기능성(function)을 Postgres product_efficacies에
-    효능당 행 1개로 발행(best-effort, 자체 연결)."""
+    효능당 행 1개로 발행하고, 성분도 product_ingredients에 재발행한다(best-effort, 자체 연결).
+    성분을 여기서도 발행하는 이유: 어드민이 NEED_MANUAL_REVIEW에서 성분을 직접 넣어 INGREDIENTS_ADDED로
+    올린 상품은 step5를 거치지 않아 Postgres 성분 행이 없다. step6이 어드민 이후 첫 단계라 여기서 보장한다."""
     try:
         conn = pg.connect()
     except Exception as exc:
@@ -107,15 +110,18 @@ def _publish_efficacy_pg(asin: str, name: str, efficacy, functions: list[str] | 
     try:
         pg.ensure_catalog_schema(conn)
         pg.ensure_efficacies_schema(conn)
+        pg.ensure_ingredients_schema(conn)
         pg.publish_efficacy(conn, {"asin": asin, "name": name}, efficacy, functions)
+        pg.publish_ingredients(conn, {"asin": asin, "name": name}, ingredients or [], ingredient_source or "admin")
     except Exception as exc:
         logger.warning(f"[STEP6][PG] 효능 발행 실패 asin={asin}: {exc}")
     finally:
         conn.close()
 
 
-async def _save_analysis(asin: str, name: str, raw: dict, functions: list[str] | None) -> None:
+async def _save_analysis(asin: str, name: str, raw: dict, product: dict) -> None:
     col = _get_products_collection()
+    functions = product.get("function")
     data = raw.get("analysis") or raw
     await col.update_one(
         {"asin": asin},
@@ -128,7 +134,8 @@ async def _save_analysis(asin: str, name: str, raw: dict, functions: list[str] |
         }},
     )
     # Postgres product_efficacies 직접 발행(INCI 효능 target + 어드민 기능성 function → 효능당 행 1개).
-    await asyncio.to_thread(_publish_efficacy_pg, asin, name, data.get("efficacySummary"), functions)
+    await asyncio.to_thread(_publish_efficacy_pg, asin, name, data.get("efficacySummary"), functions,
+                            product.get("ingredients"), product.get("ingredient_source"))
     logger.info(f"[STEP6][READY_FOR_KEYWORD_ANALYSIS] {name!r}: INCI 분석 저장 완료.")
 
 
@@ -152,7 +159,7 @@ async def run() -> None:
         if not raw:
             continue
 
-        await _save_analysis(product["asin"], name, raw, product.get("function"))
+        await _save_analysis(product["asin"], name, raw, product)
 
 
 if __name__ == "__main__":

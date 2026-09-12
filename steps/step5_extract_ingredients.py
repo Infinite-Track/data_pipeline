@@ -49,6 +49,10 @@ ALLOWED_SOURCES = {"official_site", "oliveyoung"}
 # 성분이 이 개수 미만이면 INCI 분석 신뢰도가 낮다고 보고 INSUFFICIENT_INGREDIENTS로 남긴다.
 MIN_INGREDIENTS_FOR_ANALYSIS = 5
 
+# OliveYoung 성분을 채택하기 위한 최소 겹침 비율(Gemini가 찾은 성분 중 OY 리스트에도 있는 비율).
+# 표기 차이(Water/Aqua 등)를 감안해 낮게 잡되, 전혀 다른 상품(겹침 0~20%)은 걸러낸다.
+OY_MIN_OVERLAP = 0.4
+
 # 동시에 처리할 상품 수(비동기 병렬).
 CONCURRENCY = 8
 
@@ -82,8 +86,9 @@ def _build_prompt(name: str, brand: str | None) -> str:
         "Also find the product's official KOREAN product name (한글 제품명) for name_kr "
         "(check the brand site / Olive Young / Hwahae). If you cannot determine it, use null.\n"
         "Also find this product's Olive Young GLOBAL product number for prdt_no — the prdtNo in a "
-        "global.oliveyoung.com/product/detail?prdtNo=... URL (format: 'GA' followed by digits, "
-        "e.g. GA240825052). If you cannot find it, use null.\n\n"
+        "global.oliveyoung.com/product/detail?prdtNo=... URL (format: 'GA' followed by digits). "
+        "Only return a prdtNo you actually found in a URL for THIS exact product; if you cannot find it, "
+        "use null. Never guess or invent a number.\n\n"
         "Return raw JSON only:\n"
         "{\n"
         '  "ingredients": [full INCI ingredient list, in label order, as individual strings],\n'
@@ -139,11 +144,19 @@ def _extract_ingredients_sync(name: str, brand: str | None) -> dict | None:
     return None
 
 
+def _norm_ingredient(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", name.lower())
+
+
 def _extract_full_sync(name: str, brand: str | None) -> dict | None:
     """Gemini 그라운딩으로 성분·prdt_no·name_kr을 받고, prdt_no가 있으면 OliveYoung API를
     우선 사용한다(정형 '045' 필드라 그라운딩보다 신뢰도 높음). OY가 없거나 요약본(truncated)/
     빈값이면 그라운딩 성분을 그대로 쓴다. '046' 기능성은 mfds_functional 힌트로 함께 반환.
-    (틀린 prdt_no면 OY가 빈값/에러 → 자연히 그라운딩으로 폴백되어 자기검증된다.)"""
+
+    자기검증(2026-09-12 사고 이후): 틀린 prdt_no가 "존재하는 다른 상품"을 가리키면 OY가 그 상품의
+    진짜 성분을 돌려줘 그대로 저장되는 오염이 발생했다(프롬프트 예시 번호를 Gemini가 베껴 62개 상품이
+    같은 성분을 가짐). 그래서 OY 성분은 Gemini가 직접 찾은 성분과 OY_MIN_OVERLAP 이상 겹칠 때만 채택하고,
+    Gemini 성분이 없어 대조할 수 없으면 OY 결과를 쓰지 않는다(→ 수동 검토)."""
     gemini = _extract_ingredients_sync(name, brand)
     if gemini is None:
         return None  # 일시 실패 → PENDING 유지 재시도
@@ -151,9 +164,15 @@ def _extract_full_sync(name: str, brand: str | None) -> dict | None:
     if prdt_no:
         oy = oliveyoung_client.get_ingredients(prdt_no)
         if oy and oy["ingredients"] and not oy["truncated"]:
-            logger.info(f"[STEP5][OY] {name!r}: OliveYoung {prdt_no} 성분 {len(oy['ingredients'])}개 사용")
-            return {"ingredients": oy["ingredients"], "source": "oliveyoung",
-                    "name_kr": gemini.get("name_kr"), "mfds_functional": oy.get("functional")}
+            g_set = {_norm_ingredient(i) for i in gemini.get("ingredients") or []}
+            o_set = {_norm_ingredient(i) for i in oy["ingredients"]}
+            overlap = len(g_set & o_set) / len(g_set) if g_set else 0.0
+            if g_set and overlap >= OY_MIN_OVERLAP:
+                logger.info(f"[STEP5][OY] {name!r}: OliveYoung {prdt_no} 성분 {len(oy['ingredients'])}개 사용 (Gemini 대비 겹침 {overlap:.0%})")
+                return {"ingredients": oy["ingredients"], "source": "oliveyoung",
+                        "name_kr": gemini.get("name_kr"), "mfds_functional": oy.get("functional")}
+            logger.warning(f"[STEP5][OY-REJECT] {name!r}: prdt_no={prdt_no} 성분이 Gemini 결과와 겹침 {overlap:.0%} "
+                           f"(Gemini 성분 {len(g_set)}개) — 다른 상품일 가능성, OY 결과 폐기")
     return gemini
 
 
