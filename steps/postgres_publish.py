@@ -71,7 +71,8 @@ def upsert_catalog(conn, product: dict) -> int:
                RETURNING id""",
             (product["asin"], product.get("name"), product.get("category"),
              product.get("brand"), _num(product.get("price")), product.get("thumbnail_url"),
-             product.get("mention_count"), _num(product.get("ad_ratio")), product.get("description")),
+             None if product.get("mention_count") is None else int(product["mention_count"]),  # bson Int64 → int
+             _num(product.get("ad_ratio")), product.get("description")),
         )
         cid = cur.fetchone()[0]
     conn.commit()
