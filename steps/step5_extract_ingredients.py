@@ -20,8 +20,8 @@ status를 다음 중 하나로 갱신한다. 이후 흐름은 어드민 수동 �
     - INGREDIENTS_ADDED       : 성분을 충분히 찾음 → 어드민이 의약품안전나라 기능성 확인 후
                                 function 입력(어드민: READY_FOR_INCIAPI로 갱신) → STEP6 대상
 
-한국 상품이면 성분 크롤링 직후 Postgres 서빙 테이블(products_catalog/products_url/
-product_ingredients/youtuber_reviews)에 발행한다.
+Postgres 서빙 테이블에는 이 단계에서 발행하지 않는다. 성분만 있고 INCI 분석이 없는 상품이
+서빙 카탈로그에 올라가지 않도록, 최초 발행은 step6(INCI 분석 완료 시점)이 담당한다.
 """
 import asyncio
 import re
@@ -31,8 +31,6 @@ from loguru import logger
 from steps.db import get_collection
 from steps.gemini_client import get_client
 from steps.llm_utils import parse_json_response
-from steps import postgres_publish as pg
-from steps import youtuber_reviews
 from steps import oliveyoung_client
 
 try:
@@ -176,39 +174,6 @@ def _extract_full_sync(name: str, brand: str | None) -> dict | None:
     return gemini
 
 
-def _publish_product_sync(product: dict, yt_rows: list[dict]) -> None:
-    """한국 상품을 Postgres 서빙 테이블에 발행: catalog + url + ingredients + youtuber_reviews.
-    step5는 동시 실행되므로 호출마다 자체 연결을 연다(psycopg2 연결 공유 불가). best-effort."""
-    try:
-        conn = pg.connect()
-    except Exception as exc:
-        logger.warning(f"[STEP5][PG] Postgres 연결 실패 — 발행 건너뜀: {exc}")
-        return
-    try:
-        product_id = pg.publish_catalog(conn, product)   # products_catalog + products_url (authoritative)
-        pg.publish_ingredients(conn, product_id, product.get("ingredients") or [], product.get("ingredient_source"))
-        pg.publish_youtuber_reviews(conn, product_id, yt_rows)
-    except Exception as exc:
-        conn.rollback()
-        logger.warning(f"[STEP5][PG] 발행 실패 asin={product.get('asin')}: {exc}")
-    finally:
-        conn.close()
-
-
-async def _publish_product_pg(asin: str) -> None:
-    """신규 한국 상품을 Postgres에 발행한다(Mongo 상품 doc + 유튜버 리뷰 행을 모아서)."""
-    product = await _get_products_collection().find_one(
-        {"asin": asin},
-        {"_id": 0, "asin": 1, "name": 1, "brand": 1, "category": 1, "price": 1,
-         "thumbnail_url": 1, "description": 1, "product_url": 1, "mention_count": 1,
-         "ad_ratio": 1, "ingredients": 1, "ingredient_source": 1},
-    )
-    if not product:
-        return
-    rows = await youtuber_reviews.gather_rows(asin)
-    await asyncio.to_thread(_publish_product_sync, product, rows)
-
-
 _CONCENTRATION_RE = re.compile(
     r"\s*[\(\[]?\s*\d[\d,.]*\s*(?:%|ppm|퍼센트)\s*[\)\]]?\s*$", re.IGNORECASE
 )
@@ -244,8 +209,6 @@ async def _save_result(asin: str, name: str, result: dict | None) -> None:
     if not result["ingredients"]:
         # 자동 추출 실패 → 어드민이 수동으로 성분을 넣도록 넘긴다(NEED_MANUAL_REVIEW).
         await col.update_one({"asin": asin}, {"$set": {**base, "status": "NEED_MANUAL_REVIEW"}})
-        # 성분이 없어도 한국 상품이므로 카탈로그/URL/유튜버리뷰는 발행한다(성분 행만 비어있음).
-        await _publish_product_pg(asin)
         logger.warning(f"[STEP5][NEED_MANUAL_REVIEW] {name!r}: 자동 성분추출 실패 — 어드민 수동 입력 대기.")
         return
 
@@ -262,8 +225,6 @@ async def _save_result(asin: str, name: str, result: dict | None) -> None:
             "status": status,
         }},
     )
-    # Postgres 서빙 발행(catalog + url + ingredients + youtuber_reviews).
-    await _publish_product_pg(asin)
     logger.info(f"[STEP5][{status}] {name!r}: 성분 {ingredient_count}개 ({result['source']})")
 
 
