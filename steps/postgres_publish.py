@@ -99,9 +99,16 @@ def get_product_id(conn, asin: str) -> str | None:
 
 
 def _insert_catalog(cur, product: dict) -> str:
-    """products_catalog에 새 행을 넣고 id를 반환. id는 자동 채번이 없어 max+1(숫자 문자열)로 만든다.
-    호출 전 같은 트랜잭션에서 테이블 락을 잡아 동시 삽입 시 id 충돌을 막는다."""
+    """products_catalog에 asin 행이 없으면 새로 넣고 id를 반환한다(있으면 그 id를 그대로 반환).
+
+    운영 스키마에 asin 유니크 제약이 없고 id 자동 채번도 없어서, 테이블 락을 먼저 잡고
+    **락 안에서 다시 존재를 확인한 뒤** max+1로 넣는다. 락 전에만 확인하면 두 트랜잭션이
+    동시에 "없음"을 보고 같은 asin을 두 번 넣을 수 있다(파이프라인 재실행·어드민 동시 쓰기)."""
     cur.execute("LOCK TABLE products_catalog IN SHARE ROW EXCLUSIVE MODE")
+    cur.execute("SELECT id FROM products_catalog WHERE asin = %s ORDER BY id::int LIMIT 1", (product["asin"],))
+    row = cur.fetchone()
+    if row:
+        return row[0]   # 락을 기다리는 사이 다른 트랜잭션이 넣은 경우
     cur.execute("SELECT COALESCE(MAX(id::int), 0) + 1 FROM products_catalog WHERE id ~ '^[0-9]+$'")
     new_id = str(cur.fetchone()[0])
     cur.execute(
