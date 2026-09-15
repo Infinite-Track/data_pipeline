@@ -361,11 +361,47 @@ def link_ingredient_dictionary(cur, product_id: str) -> int:
 
 
 # ── 효능 (step6) ──────────────────────────────────────────────────────
-def publish_efficacies(conn, product_id: str, effects: list[dict]) -> list[tuple[int, list[str]]]:
+# 어드민이 입력한 식약처 기능성(products.function) → INCI 효능 target.
+# 백엔드 EffectDescriptions가 아는 키로만 맞춘다(모르는 키는 상세 화면에서 설명이 비어 나온다).
+MFDS_FUNCTION_TARGETS: dict[str, str] = {
+    "WHITENING": "brightening",              # 미백
+    "WRINKLE_IMPROVEMENT": "anti_wrinkle",   # 주름 개선
+    "UV_PROTECTION": "photoprotection",      # 자외선 차단
+    "ACNE_RELIEF": "anti_acne",              # 여드름성 피부 완화
+    "SKIN_BARRIER_RECOVERY": "barrier_repair",
+}
+# 기능성 인증은 인체적용시험 자료 심사를 거치므로 성분 추론보다 강한 근거로 본다.
+MFDS_STRENGTH = "strong"
+MFDS_EVIDENCE = "controlled_trial"
+
+
+def publish_efficacies(conn, product_id: str, effects: list[dict],
+                       functions: list[str] | None = None) -> list[tuple[int, list[str]]]:
     """INCI API efficacySummary.topEffects를 product_efficacies에 발행(해당 상품 행 삭제 후 삽입 → 멱등).
     content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락).
     기여 성분은 컬럼(contributing_ingredients)에 넣지 않고 product_ingredient_efficacy 연결 테이블로만 기록한다.
-    반환: [(효능 id, 기여 성분 INCI 이름들)] topEffects 순서 그대로 → publish_ingredients(effect_links=)에 넘긴다."""
+
+    functions = 어드민이 입력한 식약처 기능성(products.function). 같은 효능이 이미 있으면 강도를 strong으로
+    올리고(근거 수준은 기존 값 유지), 없으면 기여 성분 없는 행으로 새로 넣는다 → 같은 content가 두 행이 되지 않는다.
+
+    반환: [(효능 id, 기여 성분 INCI 이름들)] → publish_ingredients(effect_links=)에 넘긴다."""
+    rows: list[tuple[str, int, str | None, str | None, list[str]]] = []
+    for e in effects:
+        target = (e.get("target") or "").strip()
+        if target:
+            rows.append((target, _int(e.get("contributingIngredientCount")) or 0, e.get("compositeStrength"),
+                         e.get("bestEvidenceLevel"), list(e.get("contributingIngredients") or [])))
+    for fn in functions or []:
+        target = MFDS_FUNCTION_TARGETS.get((fn or "").strip().upper())
+        if not target:
+            continue
+        found = next((i for i, r in enumerate(rows) if r[0] == target), None)
+        if found is None:
+            rows.append((target, 0, MFDS_STRENGTH, MFDS_EVIDENCE, []))
+        else:
+            t, count, _strength, evidence, names = rows[found]
+            rows[found] = (t, count, MFDS_STRENGTH, evidence or MFDS_EVIDENCE, names)
+
     links: list[tuple[int, list[str]]] = []
     with conn.cursor() as cur:
         cur.execute("LOCK TABLE product_efficacies IN SHARE ROW EXCLUSIVE MODE")
@@ -373,18 +409,14 @@ def publish_efficacies(conn, product_id: str, effects: list[dict]) -> list[tuple
         cur.execute("DELETE FROM product_efficacies WHERE product_catalog_id = %s", (product_id,))
         cur.execute("SELECT COALESCE(MAX(id), 0) FROM product_efficacies")
         next_id = cur.fetchone()[0] + 1
-        for e in effects:
-            target = (e.get("target") or "").strip()
-            if not target:
-                continue
+        for target, count, strength, evidence, names in rows:
             cur.execute(
                 """INSERT INTO product_efficacies
                        (id, product_catalog_id, content, contributing_ingredient_count, composite_strength, best_evidence_level)
                    VALUES (%s, %s, %s, %s, %s, %s)""",
-                (next_id, product_id, target, _int(e.get("contributingIngredientCount")) or 0,
-                 e.get("compositeStrength"), e.get("bestEvidenceLevel")),
+                (next_id, product_id, target, count, strength, evidence),
             )
-            links.append((next_id, list(e.get("contributingIngredients") or [])))
+            links.append((next_id, names))
             next_id += 1
     conn.commit()
     return links
