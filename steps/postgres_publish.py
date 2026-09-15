@@ -234,6 +234,20 @@ def publish_youtuber_reviews(conn, product_id: str, rows: list[dict]) -> None:
 
 
 # ── 성분 (step5 / step6) ─────────────────────────────────────────────
+def _dedup(ingredients: list[str]) -> list[str]:
+    """라벨 성분 목록에서 빈 값과 같은 이름을 제거한다(첫 등장 순서·표기 유지, 대소문자 무시).
+    다중 구성 제품은 라벨에 'Water'가 여러 번 나오는데 INCI API도 같은 이름을 한 번만 돌려주므로,
+    중복을 지워야 두 목록의 순서가 맞는다(운영 124개 상품 전부 일치 확인)."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in ingredients or []:
+        name = (raw or "").strip()[:300]
+        if name and name.upper() not in seen:
+            seen.add(name.upper())
+            out.append(name)
+    return out
+
+
 def _inci_by_order(ingredients: list[str], parsed: list[dict] | None) -> dict[int, dict]:
     """INCI API parsedIngredients를 라벨 성분 순서(1-based)에 맞춘다.
     API는 보낸 순서대로 돌려주므로 개수가 같으면 순서로 짝짓고, 개수가 다르면(API가 일부 항목을 빼먹는 경우가 있음)
@@ -249,36 +263,57 @@ def _inci_by_order(ingredients: list[str], parsed: list[dict] | None) -> dict[in
 def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None,
                         parsed: list[dict] | None = None, analyzed_at: str | None = None,
                         effect_links: list[tuple[int, list[str]]] | None = None) -> None:
-    """성분을 product_ingredient에 발행(해당 product_id 행 삭제 후 라벨순 삽입 → 멱등).
+    """성분을 product_ingredient에 발행한다(라벨 목록과 같아지도록 맞춤 → 멱등).
     source: official_site / oliveyoung / 어드민 입력(None)은 운영 기본값 'ADMIN'.
     parsed(INCI API parsedIngredients)·analyzed_at을 주면 성분별 INCI 분석 컬럼(inci_name, safety_score …)도 채운다.
-    농도(concentration*)·성분사전(ingredient_id)은 어드민 몫이라 건드리지 않는다.
+
+    행을 전부 지우고 다시 넣지 않고 raw_name 기준으로 갱신한다(어드민 JdbcProductIngredientAdapter.replace와 같은 방식).
+    행 id가 바뀌면 어드민이 입력한 성분사전 id·농도가 사라지고, id를 CASCADE로 따라가는 product_ingredient_property
+    (성분 특성)까지 함께 지워지기 때문이다. 농도·성분사전 id는 어드민 몫이라 여기서 쓰지 않는다.
+
     effect_links = publish_efficacies()의 반환값 [(효능 id, 기여 성분 INCI 이름들)].
-    성분 행을 넣은 뒤 product_ingredient_efficacy(성분↔효능 다대다)에 연결을 기록한다.
-    기존 연결은 성분 행 삭제 시 ON DELETE CASCADE로 함께 지워진다."""
-    inci = _inci_by_order(ingredients, parsed)
+    성분 행을 맞춘 뒤 product_ingredient_efficacy(성분↔효능 다대다)에 연결을 기록한다.
+    기존 연결은 앞선 publish_efficacies()의 효능 행 삭제 때 ON DELETE CASCADE로 이미 정리된다."""
+    names = _dedup(ingredients)
+    inci = _inci_by_order(names, parsed)
     with conn.cursor() as cur:
-        cur.execute("DELETE FROM product_ingredient WHERE product_id = %s", (product_id,))
-        seen: set[tuple[int, str]] = set()
-        for order, raw in enumerate(ingredients, 1):
-            name = (raw or "").strip()[:300]
-            if not name or (order, name) in seen:
-                continue
-            seen.add((order, name))
-            p = inci.get(order)
+        if names:
+            # 라벨에서 빠진 성분 + 같은 이름이 여러 행인 경우의 나머지(가장 오래된 행만 남김)를 정리한다.
             cur.execute(
-                """INSERT INTO product_ingredient
-                       (product_id, raw_name, inci_order, source,
-                        inci_name, safety_score, safety_level, is_allergen, allergen_types, comedogenicity_rating,
-                        irritancy_potential, pregnancy_safe, inci_found, inci_has_data, inci_analyzed_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (product_id, name, order, source or "ADMIN")
-                + ((None,) * 11 if p is None else (
-                    p.get("inciName"), _int(p.get("safetyScore")), p.get("safetyLevel"), p.get("isAllergen"),
-                    Json(list(p.get("allergenTypes") or [])), _int(p.get("comedogenicityRating")),
-                    p.get("irritancyPotential"), p.get("pregnancySafe"), p.get("found"), p.get("hasData"),
-                    analyzed_at)),
+                """DELETE FROM product_ingredient p
+                    WHERE p.product_id = %s
+                      AND (p.raw_name <> ALL(%s)
+                           OR p.id > (SELECT min(q.id) FROM product_ingredient q
+                                       WHERE q.product_id = p.product_id AND q.raw_name = p.raw_name))""",
+                (product_id, names),
             )
+        else:
+            cur.execute("DELETE FROM product_ingredient WHERE product_id = %s", (product_id,))
+        for order, name in enumerate(names, 1):
+            p = inci.get(order)
+            values = ((None,) * 11 if p is None else (
+                p.get("inciName"), _int(p.get("safetyScore")), p.get("safetyLevel"), p.get("isAllergen"),
+                Json(list(p.get("allergenTypes") or [])), _int(p.get("comedogenicityRating")),
+                p.get("irritancyPotential"), p.get("pregnancySafe"), p.get("found"), p.get("hasData"),
+                analyzed_at))
+            cur.execute(
+                """UPDATE product_ingredient
+                      SET inci_order = %s, source = %s,
+                          inci_name = %s, safety_score = %s, safety_level = %s, is_allergen = %s, allergen_types = %s,
+                          comedogenicity_rating = %s, irritancy_potential = %s, pregnancy_safe = %s, inci_found = %s,
+                          inci_has_data = %s, inci_analyzed_at = %s
+                    WHERE product_id = %s AND raw_name = %s""",
+                (order, source or "ADMIN") + values + (product_id, name),
+            )
+            if cur.rowcount == 0:
+                cur.execute(
+                    """INSERT INTO product_ingredient
+                           (product_id, raw_name, inci_order, source,
+                            inci_name, safety_score, safety_level, is_allergen, allergen_types, comedogenicity_rating,
+                            irritancy_potential, pregnancy_safe, inci_found, inci_has_data, inci_analyzed_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                    (product_id, name, order, source or "ADMIN") + values,
+                )
         for effect_id, names in effect_links or []:
             upper = [n.strip().upper() for n in names if n]
             if upper:
