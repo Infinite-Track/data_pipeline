@@ -33,9 +33,14 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                          "mention_count", "ad_ratio", "content", "created_at"],
     "products_url": ["id", "product_id", "url", "domain", "region", "active", "updated_at"],
     "youtuber_reviews": ["id", "product_id", "youtuber_name", "video_url", "ad_likelihood", "review"],
-    "product_ingredient": ["id", "product_id", "raw_name", "inci_order", "source"],
+    "product_ingredient": ["id", "product_id", "raw_name", "inci_order", "source",
+                           "inci_name", "safety_score", "safety_level", "is_allergen", "allergen_types",
+                           "comedogenicity_rating", "irritancy_potential", "pregnancy_safe", "inci_found",
+                           "inci_has_data", "inci_analyzed_at"],
     "product_inci_analysis": ["product_id", "ingredients", "effects", "overall_safety_score",
                               "inci_coverage", "ingredient_source", "schema_version", "analyzed_at"],
+    "product_efficacies": ["id", "product_catalog_id", "content", "contributing_ingredients",
+                           "contributing_ingredient_count", "composite_strength", "best_evidence_level"],
     "reviews_keyword": ["id", "product_id", "keyword", "multiple"],
     "products_normalized": ["product_id", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
                             "sensitivity", "melanin", "water", "rough", "red_spot", "skin_type_dry",
@@ -227,9 +232,24 @@ def publish_youtuber_reviews(conn, product_id: str, rows: list[dict]) -> None:
 
 
 # ── 성분 (step5 / step6) ─────────────────────────────────────────────
-def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None) -> None:
+def _inci_by_order(ingredients: list[str], parsed: list[dict] | None) -> dict[int, dict]:
+    """INCI API parsedIngredients를 라벨 성분 순서(1-based)에 맞춘다.
+    API는 보낸 순서대로 돌려주므로 개수가 같으면 순서로 짝짓고, 개수가 다르면(API가 일부 항목을 빼먹는 경우가 있음)
+    이름이 정확히 같은 것만 짝짓는다. 짝이 없는 성분은 INCI 컬럼을 NULL로 둔다(= 분석 안 됨)."""
+    if not parsed:
+        return {}
+    if len(parsed) == len(ingredients):
+        return dict(enumerate(parsed, 1))
+    by_name = {(p.get("inciName") or "").strip().upper(): p for p in parsed}
+    return {i: by_name[n] for i, raw in enumerate(ingredients, 1) if (n := (raw or "").strip().upper()) in by_name}
+
+
+def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None,
+                        parsed: list[dict] | None = None, analyzed_at: str | None = None) -> None:
     """성분을 product_ingredient에 발행(해당 product_id 행 삭제 후 라벨순 삽입 → 멱등).
-    source: official_site / oliveyoung / 어드민 입력(None)은 운영 기본값 'ADMIN'."""
+    source: official_site / oliveyoung / 어드민 입력(None)은 운영 기본값 'ADMIN'.
+    parsed(INCI API parsedIngredients)·analyzed_at을 주면 성분별 INCI 분석 컬럼(inci_name, safety_score …)도 채운다."""
+    inci = _inci_by_order(ingredients, parsed)
     with conn.cursor() as cur:
         cur.execute("DELETE FROM product_ingredient WHERE product_id = %s", (product_id,))
         seen: set[tuple[int, str]] = set()
@@ -238,10 +258,45 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
             if not name or (order, name) in seen:
                 continue
             seen.add((order, name))
+            p = inci.get(order)
             cur.execute(
-                "INSERT INTO product_ingredient (product_id, raw_name, inci_order, source) VALUES (%s, %s, %s, %s)",
-                (product_id, name, order, source or "ADMIN"),
+                """INSERT INTO product_ingredient
+                       (product_id, raw_name, inci_order, source,
+                        inci_name, safety_score, safety_level, is_allergen, allergen_types, comedogenicity_rating,
+                        irritancy_potential, pregnancy_safe, inci_found, inci_has_data, inci_analyzed_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (product_id, name, order, source or "ADMIN")
+                + ((None,) * 11 if p is None else (
+                    p.get("inciName"), _int(p.get("safetyScore")), p.get("safetyLevel"), p.get("isAllergen"),
+                    Json(list(p.get("allergenTypes") or [])), _int(p.get("comedogenicityRating")),
+                    p.get("irritancyPotential"), p.get("pregnancySafe"), p.get("found"), p.get("hasData"),
+                    analyzed_at)),
             )
+    conn.commit()
+
+
+# ── 효능 (step6) ──────────────────────────────────────────────────────
+def publish_efficacies(conn, product_id: str, effects: list[dict]) -> None:
+    """INCI API efficacySummary.topEffects를 product_efficacies에 발행(해당 상품 행 삭제 후 삽입 → 멱등).
+    content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락)."""
+    with conn.cursor() as cur:
+        cur.execute("LOCK TABLE product_efficacies IN SHARE ROW EXCLUSIVE MODE")
+        cur.execute("DELETE FROM product_efficacies WHERE product_catalog_id = %s", (product_id,))
+        cur.execute("SELECT COALESCE(MAX(id), 0) FROM product_efficacies")
+        next_id = cur.fetchone()[0] + 1
+        for e in effects:
+            target = (e.get("target") or "").strip()
+            if not target:
+                continue
+            cur.execute(
+                """INSERT INTO product_efficacies
+                       (id, product_catalog_id, content, contributing_ingredients, contributing_ingredient_count,
+                        composite_strength, best_evidence_level)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (next_id, product_id, target, Json(list(e.get("contributingIngredients") or [])),
+                 _int(e.get("contributingIngredientCount")) or 0, e.get("compositeStrength"), e.get("bestEvidenceLevel")),
+            )
+            next_id += 1
     conn.commit()
 
 
