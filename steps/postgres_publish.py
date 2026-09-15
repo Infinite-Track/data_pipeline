@@ -33,7 +33,10 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                          "mention_count", "ad_ratio", "content", "created_at"],
     "products_url": ["id", "product_id", "url", "domain", "region", "active", "updated_at"],
     "youtuber_reviews": ["id", "product_id", "youtuber_name", "video_url", "ad_likelihood", "review"],
-    "product_ingredient": ["id", "product_id", "raw_name", "inci_order", "source",
+    # 성분 사전(백엔드 소유, 읽기 전용) — product_ingredient.ingredient_id 매칭에 쓴다.
+    "ingredient": ["id", "inci_name", "display_name_ko"],
+    "ingredient_alias": ["ingredient_id", "alias"],
+    "product_ingredient": ["id", "product_id", "raw_name", "inci_order", "source", "ingredient_id",
                            "inci_name", "safety_score", "safety_level", "is_allergen", "allergen_types",
                            "comedogenicity_rating", "irritancy_potential", "pregnancy_safe", "inci_found",
                            "inci_has_data", "inci_analyzed_at"],
@@ -269,7 +272,8 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
 
     행을 전부 지우고 다시 넣지 않고 raw_name 기준으로 갱신한다(어드민 JdbcProductIngredientAdapter.replace와 같은 방식).
     행 id가 바뀌면 어드민이 입력한 성분사전 id·농도가 사라지고, id를 CASCADE로 따라가는 product_ingredient_property
-    (성분 특성)까지 함께 지워지기 때문이다. 농도·성분사전 id는 어드민 몫이라 여기서 쓰지 않는다.
+    (성분 특성)까지 함께 지워지기 때문이다. 농도(concentration*)는 어드민 몫이라 건드리지 않고,
+    성분사전 ingredient_id는 link_ingredient_dictionary()가 아직 비어 있는 행만 채운다.
 
     effect_links = publish_efficacies()의 반환값 [(효능 id, 기여 성분 INCI 이름들)].
     성분 행을 맞춘 뒤 product_ingredient_efficacy(성분↔효능 다대다)에 연결을 기록한다.
@@ -314,6 +318,7 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (product_id, name, order, source or "ADMIN") + values,
                 )
+        link_ingredient_dictionary(cur, product_id)
         for effect_id, names in effect_links or []:
             upper = [n.strip().upper() for n in names if n]
             if upper:
@@ -324,6 +329,35 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
                     (effect_id, product_id, upper),
                 )
     conn.commit()
+
+
+# 성분 사전(ingredient) 매칭: 공백을 지우고 대소문자를 무시해 INCI명·한글명·별칭과 대조한다.
+# 어드민 JdbcProductIngredientAdapter.matchIngredient와 같은 규칙이며, 파이프라인은 라벨 원문(raw_name)이
+# 안 맞을 때 INCI API가 표준화한 이름(inci_name)으로 한 번 더 시도한다.
+_INGREDIENT_DICT = """
+    SELECT id, lower(replace(inci_name, ' ', '')) AS k FROM ingredient
+    UNION ALL SELECT id, lower(replace(display_name_ko, ' ', '')) FROM ingredient
+    UNION ALL SELECT ingredient_id, lower(replace(alias, ' ', '')) FROM ingredient_alias
+"""
+
+
+def link_ingredient_dictionary(cur, product_id: str) -> int:
+    """아직 연결되지 않은 성분 행을 성분 사전에 연결한다. 반환: 새로 연결된 행 수.
+    사람이 손으로 연결해 둔 값은 덮지 않는다(ingredient_id IS NULL인 행만) — 사전에 성분이 늦게 등록돼도
+    다음 발행에서 자동으로 이어진다."""
+    cur.execute(
+        f"""WITH dict AS ({_INGREDIENT_DICT})
+            UPDATE product_ingredient p
+               SET ingredient_id = COALESCE(
+                       (SELECT d.id FROM dict d WHERE d.k = lower(replace(p.raw_name, ' ', '')) LIMIT 1),
+                       (SELECT d.id FROM dict d WHERE d.k = lower(replace(p.inci_name, ' ', '')) LIMIT 1))
+             WHERE p.product_id = %s AND p.ingredient_id IS NULL
+               AND COALESCE(
+                       (SELECT d.id FROM dict d WHERE d.k = lower(replace(p.raw_name, ' ', '')) LIMIT 1),
+                       (SELECT d.id FROM dict d WHERE d.k = lower(replace(p.inci_name, ' ', '')) LIMIT 1)) IS NOT NULL""",
+        (product_id,),
+    )
+    return cur.rowcount
 
 
 # ── 효능 (step6) ──────────────────────────────────────────────────────
