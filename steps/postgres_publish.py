@@ -39,7 +39,9 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                            "inci_has_data", "inci_analyzed_at"],
     "product_inci_analysis": ["product_id", "ingredients", "effects", "overall_safety_score",
                               "inci_coverage", "ingredient_source", "schema_version", "analyzed_at"],
-    "product_efficacies": ["id", "product_catalog_id", "content", "contributing_ingredients",
+    # contributing_ingredients(jsonb)와 product_ingredient.product_efficacies(FK)는 스키마 개정 전후 모두 돌아가도록
+    # 실행 시점에 컬럼 유무를 보고 쓴다 → 필수 목록에 넣지 않는다.
+    "product_efficacies": ["id", "product_catalog_id", "content",
                            "contributing_ingredient_count", "composite_strength", "best_evidence_level"],
     "reviews_keyword": ["id", "product_id", "keyword", "multiple"],
     "products_normalized": ["product_id", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
@@ -244,11 +246,23 @@ def _inci_by_order(ingredients: list[str], parsed: list[dict] | None) -> dict[in
     return {i: by_name[n] for i, raw in enumerate(ingredients, 1) if (n := (raw or "").strip().upper()) in by_name}
 
 
+def _table_columns(conn, table: str) -> set[str]:
+    with conn.cursor() as cur:
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = %s",
+                    (table,))
+        return {r[0] for r in cur.fetchall()}
+
+
 def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None,
-                        parsed: list[dict] | None = None, analyzed_at: str | None = None) -> None:
+                        parsed: list[dict] | None = None, analyzed_at: str | None = None,
+                        effect_links: list[tuple[int, list[str]]] | None = None) -> None:
     """성분을 product_ingredient에 발행(해당 product_id 행 삭제 후 라벨순 삽입 → 멱등).
     source: official_site / oliveyoung / 어드민 입력(None)은 운영 기본값 'ADMIN'.
-    parsed(INCI API parsedIngredients)·analyzed_at을 주면 성분별 INCI 분석 컬럼(inci_name, safety_score …)도 채운다."""
+    parsed(INCI API parsedIngredients)·analyzed_at을 주면 성분별 INCI 분석 컬럼(inci_name, safety_score …)도 채운다.
+    농도(concentration*)·성분사전(ingredient_id)은 어드민 몫이라 건드리지 않는다.
+    effect_links = publish_efficacies()의 반환값 [(효능 id, 기여 성분 INCI 이름들)] (강한 효능 순).
+    product_ingredient.product_efficacies 컬럼이 있으면 각 성분을 기여하는 효능 중 가장 앞(강한) 효능 id에 연결한다.
+    (한 성분이 여러 효능에 기여해도 컬럼이 하나라 하나만 연결됨 — 전체 목록은 product_efficacies.contributing_ingredients.)"""
     inci = _inci_by_order(ingredients, parsed)
     with conn.cursor() as cur:
         cur.execute("DELETE FROM product_ingredient WHERE product_id = %s", (product_id,))
@@ -272,15 +286,31 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
                     p.get("irritancyPotential"), p.get("pregnancySafe"), p.get("found"), p.get("hasData"),
                     analyzed_at)),
             )
+        if effect_links and "product_efficacies" in _table_columns(conn, "product_ingredient"):
+            # 약한 효능부터 덮어써서 가장 앞(강한) 효능 id가 최종으로 남는다.
+            for effect_id, names in reversed(effect_links):
+                upper = [n.strip().upper() for n in names if n]
+                if upper:
+                    cur.execute(
+                        "UPDATE product_ingredient SET product_efficacies = %s WHERE product_id = %s AND upper(inci_name) = ANY(%s)",
+                        (effect_id, product_id, upper),
+                    )
     conn.commit()
 
 
 # ── 효능 (step6) ──────────────────────────────────────────────────────
-def publish_efficacies(conn, product_id: str, effects: list[dict]) -> None:
+def publish_efficacies(conn, product_id: str, effects: list[dict]) -> list[tuple[int, list[str]]]:
     """INCI API efficacySummary.topEffects를 product_efficacies에 발행(해당 상품 행 삭제 후 삽입 → 멱등).
-    content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락)."""
+    content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락).
+    contributing_ingredients(jsonb)는 컬럼이 있는 동안만 쓴다(ERD 개정안에서는 빠짐).
+    반환: [(효능 id, 기여 성분 INCI 이름들)] topEffects 순서 그대로 → publish_ingredients(effect_links=)에 넘긴다."""
+    has_json = "contributing_ingredients" in _table_columns(conn, "product_efficacies")
+    links: list[tuple[int, list[str]]] = []
     with conn.cursor() as cur:
         cur.execute("LOCK TABLE product_efficacies IN SHARE ROW EXCLUSIVE MODE")
+        if "product_efficacies" in _table_columns(conn, "product_ingredient"):
+            # 성분 행이 이 상품의 효능 id를 FK로 물고 있으면 삭제가 막히므로 먼저 끊는다(재발행 시).
+            cur.execute("UPDATE product_ingredient SET product_efficacies = NULL WHERE product_id = %s", (product_id,))
         cur.execute("DELETE FROM product_efficacies WHERE product_catalog_id = %s", (product_id,))
         cur.execute("SELECT COALESCE(MAX(id), 0) FROM product_efficacies")
         next_id = cur.fetchone()[0] + 1
@@ -288,16 +318,18 @@ def publish_efficacies(conn, product_id: str, effects: list[dict]) -> None:
             target = (e.get("target") or "").strip()
             if not target:
                 continue
-            cur.execute(
-                """INSERT INTO product_efficacies
-                       (id, product_catalog_id, content, contributing_ingredients, contributing_ingredient_count,
-                        composite_strength, best_evidence_level)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (next_id, product_id, target, Json(list(e.get("contributingIngredients") or [])),
-                 _int(e.get("contributingIngredientCount")) or 0, e.get("compositeStrength"), e.get("bestEvidenceLevel")),
-            )
+            names = list(e.get("contributingIngredients") or [])
+            cols = "id, product_catalog_id, content, contributing_ingredient_count, composite_strength, best_evidence_level"
+            vals = [next_id, product_id, target, _int(e.get("contributingIngredientCount")) or 0,
+                    e.get("compositeStrength"), e.get("bestEvidenceLevel")]
+            if has_json:
+                cols += ", contributing_ingredients"
+                vals.append(Json(names))
+            cur.execute(f"INSERT INTO product_efficacies ({cols}) VALUES ({', '.join(['%s'] * len(vals))})", vals)
+            links.append((next_id, names))
             next_id += 1
     conn.commit()
+    return links
 
 
 # ── INCI 분석 (step6) ─────────────────────────────────────────────────

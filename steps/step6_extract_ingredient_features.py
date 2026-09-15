@@ -121,9 +121,10 @@ def _publish_product_pg(product: dict, raw: dict, yt_rows: list[dict]) -> None:
     try:
         product_id = pg.publish_catalog(conn, product)   # products_catalog + products_url (authoritative)
         pg.publish_inci_analysis(conn, product_id, raw, ingredients, ingredient_source)
+        links = pg.publish_efficacies(conn, product_id, ((raw.get("efficacySummary") or {}).get("topEffects")) or [])
         pg.publish_ingredients(conn, product_id, ingredients or [], ingredient_source,
-                               parsed=raw.get("parsedIngredients"), analyzed_at=raw.get("analyzedAt"))
-        pg.publish_efficacies(conn, product_id, ((raw.get("efficacySummary") or {}).get("topEffects")) or [])
+                               parsed=raw.get("parsedIngredients"), analyzed_at=raw.get("analyzedAt"),
+                               effect_links=links)
         pg.publish_youtuber_reviews(conn, product_id, yt_rows)
     except Exception as exc:
         conn.rollback()
