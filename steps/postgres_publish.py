@@ -44,6 +44,17 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                             "summarized_at"],
 }
 
+# product_inci_analysis jsonb 안에 넣을 수 있는 키. 백엔드(api-server) Jackson 레코드와 1:1 —
+# ProductIngredientAnalysis.java(parsed 항목), ProductEfficacyEffect.java(effects 항목).
+# 이 목록에 없는 키가 들어가면 상세 API(GET /backend/products/{id})가 500을 낸다.
+PARSED_INGREDIENT_KEYS = frozenset({
+    "inciName", "safetyScore", "safetyLevel", "isAllergen", "allergenTypes",
+    "comedogenicityRating", "irritancyPotential", "pregnancySafe", "found",
+})
+EFFECT_KEYS = frozenset({
+    "target", "contributingIngredientCount", "contributingIngredients", "compositeStrength", "bestEvidenceLevel",
+})
+
 
 def preflight_schema(conn) -> list[str]:
     """대상 Postgres에 REQUIRED_SCHEMA의 테이블·컬럼이 전부 있는지 확인하고 문제 목록을 반환한다(빈 목록 = 통과).
@@ -238,8 +249,13 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
 def publish_inci_analysis(conn, product_id: str, raw: dict, declared: list[str] | None, source: str | None) -> None:
     """INCI API 원본(products.inciapi_raw_data)을 product_inci_analysis에 upsert.
     ingredients = {"parsed": parsedIngredients, "declared": 라벨 성분 리스트}, effects = efficacySummary.topEffects."""
-    ingredients = {"parsed": raw.get("parsedIngredients") or [], "declared": list(declared or [])}
-    effects = ((raw.get("efficacySummary") or {}).get("topEffects")) or []
+    # 백엔드 Jackson 레코드(ProductIngredientAnalysis / ProductEfficacyEffect)가 모르는 키가 있으면
+    # 상세 API가 역직렬화 실패로 500을 내므로, 백엔드가 아는 키만 남긴다(예: INCI API의 hasData 제거).
+    parsed = [{k: v for k, v in item.items() if k in PARSED_INGREDIENT_KEYS}
+              for item in (raw.get("parsedIngredients") or [])]
+    ingredients = {"parsed": parsed, "declared": list(declared or [])}
+    effects = [{k: v for k, v in item.items() if k in EFFECT_KEYS}
+               for item in (((raw.get("efficacySummary") or {}).get("topEffects")) or [])]
     with conn.cursor() as cur:
         cur.execute(
             """INSERT INTO product_inci_analysis
