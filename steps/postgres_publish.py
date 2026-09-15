@@ -39,7 +39,7 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                            "inci_has_data", "inci_analyzed_at"],
     "product_inci_analysis": ["product_id", "ingredients", "effects", "overall_safety_score",
                               "inci_coverage", "ingredient_source", "schema_version", "analyzed_at"],
-    # contributing_ingredients(jsonb)는 ERD 개정안에서 빠졌지만 운영에 아직 있음 → 실행 시점에 컬럼 유무를 보고 쓴다.
+    # contributing_ingredients(jsonb)는 쓰지 않는다 — 기여 성분은 product_ingredient_efficacy 연결 테이블로 기록.
     "product_efficacies": ["id", "product_catalog_id", "content",
                            "contributing_ingredient_count", "composite_strength", "best_evidence_level"],
     "product_ingredient_efficacy": ["product_efficacies", "product_ingredient"],
@@ -246,13 +246,6 @@ def _inci_by_order(ingredients: list[str], parsed: list[dict] | None) -> dict[in
     return {i: by_name[n] for i, raw in enumerate(ingredients, 1) if (n := (raw or "").strip().upper()) in by_name}
 
 
-def _table_columns(conn, table: str) -> set[str]:
-    with conn.cursor() as cur:
-        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = %s",
-                    (table,))
-        return {r[0] for r in cur.fetchall()}
-
-
 def publish_ingredients(conn, product_id: str, ingredients: list[str], source: str | None,
                         parsed: list[dict] | None = None, analyzed_at: str | None = None,
                         effect_links: list[tuple[int, list[str]]] | None = None) -> None:
@@ -302,9 +295,8 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
 def publish_efficacies(conn, product_id: str, effects: list[dict]) -> list[tuple[int, list[str]]]:
     """INCI API efficacySummary.topEffects를 product_efficacies에 발행(해당 상품 행 삭제 후 삽입 → 멱등).
     content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락).
-    contributing_ingredients(jsonb)는 컬럼이 있는 동안만 쓴다(ERD 개정안에서는 빠짐).
+    기여 성분은 컬럼(contributing_ingredients)에 넣지 않고 product_ingredient_efficacy 연결 테이블로만 기록한다.
     반환: [(효능 id, 기여 성분 INCI 이름들)] topEffects 순서 그대로 → publish_ingredients(effect_links=)에 넘긴다."""
-    has_json = "contributing_ingredients" in _table_columns(conn, "product_efficacies")
     links: list[tuple[int, list[str]]] = []
     with conn.cursor() as cur:
         cur.execute("LOCK TABLE product_efficacies IN SHARE ROW EXCLUSIVE MODE")
@@ -316,15 +308,14 @@ def publish_efficacies(conn, product_id: str, effects: list[dict]) -> list[tuple
             target = (e.get("target") or "").strip()
             if not target:
                 continue
-            names = list(e.get("contributingIngredients") or [])
-            cols = "id, product_catalog_id, content, contributing_ingredient_count, composite_strength, best_evidence_level"
-            vals = [next_id, product_id, target, _int(e.get("contributingIngredientCount")) or 0,
-                    e.get("compositeStrength"), e.get("bestEvidenceLevel")]
-            if has_json:
-                cols += ", contributing_ingredients"
-                vals.append(Json(names))
-            cur.execute(f"INSERT INTO product_efficacies ({cols}) VALUES ({', '.join(['%s'] * len(vals))})", vals)
-            links.append((next_id, names))
+            cur.execute(
+                """INSERT INTO product_efficacies
+                       (id, product_catalog_id, content, contributing_ingredient_count, composite_strength, best_evidence_level)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (next_id, product_id, target, _int(e.get("contributingIngredientCount")) or 0,
+                 e.get("compositeStrength"), e.get("bestEvidenceLevel")),
+            )
+            links.append((next_id, list(e.get("contributingIngredients") or [])))
             next_id += 1
     conn.commit()
     return links
