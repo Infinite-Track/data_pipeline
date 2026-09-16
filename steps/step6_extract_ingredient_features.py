@@ -105,12 +105,12 @@ def _analyze_via_inci_api_sync(ingredients: list[str]) -> dict | None:
 
 def _publish_product_pg(product: dict, raw: dict, yt_rows: list[dict]) -> None:
     """상품을 Postgres 서빙 테이블에 **최초 발행**한다(best-effort, 자체 연결):
-    products_catalog + products_url + product_ingredient(성분별 INCI 컬럼 포함) + product_inci_analysis
-    + product_efficacies + youtuber_reviews.
+    products_catalog + products_url + product_efficacies + product_ingredient(성분별 INCI 컬럼 포함)
+    + product_ingredient_efficacy(성분↔효능 연결) + youtuber_reviews.
 
     발행 시점이 step6인 이유: 성분만 있고 INCI 분석이 없는 상품(성분 추출 실패, 어드민 기능성 입력 대기)이
-    서빙 카탈로그에 올라가지 않도록, 분석이 끝난 상품만 내보낸다. 어드민 기능성(function)은 Mongo에만
-    두고 step8이 점수에 반영한다."""
+    서빙 카탈로그에 올라가지 않도록, 분석이 끝난 상품만 내보낸다.
+    어드민 기능성(function)은 효능 행에 반영되고, step8 점수에도 따로 쓰인다."""
     asin = product["asin"]
     ingredients, ingredient_source = product.get("ingredients"), product.get("ingredient_source")
     try:
@@ -120,7 +120,6 @@ def _publish_product_pg(product: dict, raw: dict, yt_rows: list[dict]) -> None:
         return
     try:
         product_id = pg.publish_catalog(conn, product)   # products_catalog + products_url (authoritative)
-        pg.publish_inci_analysis(conn, product_id, raw, ingredients, ingredient_source)
         links = pg.publish_efficacies(conn, product_id, ((raw.get("efficacySummary") or {}).get("topEffects")) or [],
                                       functions=product.get("function"))
         pg.publish_ingredients(conn, product_id, ingredients or [], ingredient_source,

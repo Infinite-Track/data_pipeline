@@ -7,14 +7,14 @@
 - products_catalog: id VARCHAR(숫자 문자열, 자동 채번 없음 → 여기서 max+1), asin(비유니크 → asin으로 조회),
   name NN, category, brand, price, thumbnail_url, mention_count, ad_ratio, content(=설명), created_at
 - 하위 테이블은 전부 product_id(VARCHAR) FK: products_url(id identity), youtuber_reviews(id 자동 없음 → max+1),
-  product_ingredient(단수, id serial, UNIQUE(product_id, inci_order, raw_name), source NN),
-  product_inci_analysis(PK product_id, ingredients/effects jsonb), reviews_keyword(id identity, UNIQUE(product_id, keyword)),
+  product_ingredient(단수, id serial, 성분별 INCI 분석 컬럼 포함), reviews_keyword(id identity, UNIQUE(product_id, keyword)),
   products_normalized(PK product_id, 점수 20종 NN)
+- product_efficacies(효능당 1행, id 수동 채번) ↔ product_ingredient_efficacy(N:M 연결, 백엔드 Flyway V22)
+  2026-09-16 백엔드 V22가 product_inci_analysis 테이블을 삭제하고 상세 API를 정규화 테이블만 읽도록 바꿨다.
 
 허브는 products_catalog. 최초 생성은 step5(upsert_catalog, authoritative). 하위 step은 get_product_id로 조회하거나
 get_or_create_product_id로 최소 행만 만든다(step5가 채운 값을 덮지 않음).
 """
-import json
 import os
 from urllib.parse import urlparse
 
@@ -40,12 +40,9 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                            "inci_name", "safety_score", "safety_level", "is_allergen", "allergen_types",
                            "comedogenicity_rating", "irritancy_potential", "pregnancy_safe", "inci_found",
                            "inci_has_data", "inci_analyzed_at"],
-    "product_inci_analysis": ["product_id", "ingredients", "effects", "overall_safety_score",
-                              "inci_coverage", "ingredient_source", "schema_version", "analyzed_at"],
-    # contributing_ingredients(jsonb)는 쓰지 않는다 — 기여 성분은 product_ingredient_efficacy 연결 테이블로 기록.
     "product_efficacies": ["id", "product_catalog_id", "content",
                            "contributing_ingredient_count", "composite_strength", "best_evidence_level"],
-    "product_ingredient_efficacy": ["product_efficacies", "product_ingredient"],
+    "product_ingredient_efficacy": ["product_efficacy_id", "product_ingredient_id"],
     "reviews_keyword": ["id", "product_id", "keyword", "multiple"],
     "products_normalized": ["product_id", "dark_circle", "wrinkle", "oily_intensity", "pores", "blackhead", "acne",
                             "sensitivity", "melanin", "water", "rough", "red_spot", "skin_type_dry",
@@ -53,17 +50,6 @@ REQUIRED_SCHEMA: dict[str, list[str]] = {
                             "pregnancy_risk", "comedogenicity_risk", "fragrance_risk", "irritancy_risk",
                             "summarized_at"],
 }
-
-# product_inci_analysis jsonb 안에 넣을 수 있는 키. 백엔드(api-server) Jackson 레코드와 1:1 —
-# ProductIngredientAnalysis.java(parsed 항목), ProductEfficacyEffect.java(effects 항목).
-# 이 목록에 없는 키가 들어가면 상세 API(GET /backend/products/{id})가 500을 낸다.
-PARSED_INGREDIENT_KEYS = frozenset({
-    "inciName", "safetyScore", "safetyLevel", "isAllergen", "allergenTypes",
-    "comedogenicityRating", "irritancyPotential", "pregnancySafe", "found",
-})
-EFFECT_KEYS = frozenset({
-    "target", "contributingIngredientCount", "contributingIngredients", "compositeStrength", "bestEvidenceLevel",
-})
 
 
 def preflight_schema(conn) -> list[str]:
@@ -323,7 +309,7 @@ def publish_ingredients(conn, product_id: str, ingredients: list[str], source: s
             upper = [n.strip().upper() for n in names if n]
             if upper:
                 cur.execute(
-                    """INSERT INTO product_ingredient_efficacy (product_efficacies, product_ingredient)
+                    """INSERT INTO product_ingredient_efficacy (product_efficacy_id, product_ingredient_id)
                        SELECT %s, id FROM product_ingredient WHERE product_id = %s AND upper(inci_name) = ANY(%s)
                        ON CONFLICT DO NOTHING""",
                     (effect_id, product_id, upper),
@@ -420,35 +406,6 @@ def publish_efficacies(conn, product_id: str, effects: list[dict],
             next_id += 1
     conn.commit()
     return links
-
-
-# ── INCI 분석 (step6) ─────────────────────────────────────────────────
-def publish_inci_analysis(conn, product_id: str, raw: dict, declared: list[str] | None, source: str | None) -> None:
-    """INCI API 원본(products.inciapi_raw_data)을 product_inci_analysis에 upsert.
-    ingredients = {"parsed": parsedIngredients, "declared": 라벨 성분 리스트}, effects = efficacySummary.topEffects."""
-    # 백엔드 Jackson 레코드(ProductIngredientAnalysis / ProductEfficacyEffect)가 모르는 키가 있으면
-    # 상세 API가 역직렬화 실패로 500을 내므로, 백엔드가 아는 키만 남긴다(예: INCI API의 hasData 제거).
-    parsed = [{k: v for k, v in item.items() if k in PARSED_INGREDIENT_KEYS}
-              for item in (raw.get("parsedIngredients") or [])]
-    ingredients = {"parsed": parsed, "declared": list(declared or [])}
-    effects = [{k: v for k, v in item.items() if k in EFFECT_KEYS}
-               for item in (((raw.get("efficacySummary") or {}).get("topEffects")) or [])]
-    with conn.cursor() as cur:
-        cur.execute(
-            """INSERT INTO product_inci_analysis
-                   (product_id, ingredients, effects, overall_safety_score, inci_coverage, ingredient_source,
-                    schema_version, analyzed_at)
-               VALUES (%s, %s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP)
-               ON CONFLICT (product_id) DO UPDATE SET
-                   ingredients = EXCLUDED.ingredients, effects = EXCLUDED.effects,
-                   overall_safety_score = EXCLUDED.overall_safety_score, inci_coverage = EXCLUDED.inci_coverage,
-                   ingredient_source = EXCLUDED.ingredient_source, schema_version = EXCLUDED.schema_version,
-                   analyzed_at = EXCLUDED.analyzed_at""",
-            (product_id, Json(ingredients, dumps=lambda o: json.dumps(o, ensure_ascii=False)),
-             Json(effects, dumps=lambda o: json.dumps(o, ensure_ascii=False)),
-             _num(raw.get("overallSafetyScore")), _num(raw.get("coverage")), source),
-        )
-    conn.commit()
 
 
 # ── 리뷰 키워드 (step7) ────────────────────────────────────────────────
