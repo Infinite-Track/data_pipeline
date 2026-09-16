@@ -360,6 +360,20 @@ MFDS_FUNCTION_TARGETS: dict[str, str] = {
 MFDS_STRENGTH = "strong"
 MFDS_EVIDENCE = "controlled_trial"
 
+# 식약처 기능성 인증이 있어야 표시할 수 있는 효능 → 필요한 기능성 분류.
+# 성분에 근거가 있어도 인증이 없으면 기능성 표방이 되므로, "인증 없음"이 확인된 상품에서는 발행하지 않는다.
+# 미백만 두 효능을 묶는다 — 색소침착 개선 표시도 사실상 미백 표방이다.
+# 피부장벽(barrier_repair)은 제외한다 — 기능성 인증은 아토피 보습에 한정된 좁은 범주인 반면
+# 성분 관점의 barrier repair는 대부분의 보습제에 해당해 성격이 다르다(인증 시 강도만 올린다).
+# 나머지 효능(보습·진정·항산화·콜라겐·탄력 등)은 성분 특성 설명이라 인증과 무관하게 표시한다.
+REGULATED_TARGETS: dict[str, str] = {
+    "brightening": "WHITENING",
+    "anti_hyperpigmentation": "WHITENING",
+    "anti_wrinkle": "WRINKLE_IMPROVEMENT",
+    "photoprotection": "UV_PROTECTION",
+    "anti_acne": "ACNE_RELIEF",
+}
+
 
 def publish_efficacies(conn, product_id: str, effects: list[dict],
                        functions: list[str] | None = None) -> list[tuple[int, list[str]]]:
@@ -367,18 +381,27 @@ def publish_efficacies(conn, product_id: str, effects: list[dict],
     content = target(snake_case 그대로; 백엔드가 표시용으로 바꿈). id는 자동 채번이 없어 max+1(테이블 락).
     기여 성분은 컬럼(contributing_ingredients)에 넣지 않고 product_ingredient_efficacy 연결 테이블로만 기록한다.
 
-    functions = 어드민이 입력한 식약처 기능성(products.function). 같은 효능이 이미 있으면 강도를 strong으로
-    올리고(근거 수준은 기존 값 유지), 없으면 기여 성분 없는 행으로 새로 넣는다 → 같은 content가 두 행이 되지 않는다.
+    functions = 어드민이 입력한 식약처 기능성(products.function). 세 가지 상태를 구분한다.
+      None  = 어드민 미확인(Mongo에 필드 없음) → 게이팅하지 않고 INCI 효능을 그대로 발행
+      []    = 확인 결과 기능성 없음           → REGULATED_TARGETS 효능을 발행하지 않음
+      [...] = 인증받은 분류                   → 해당 분류의 효능만 허용, 대표 효능은 강도를 strong으로
+    인증이 있는데 INCI 효능에 없으면 기여 성분 없는 행으로 새로 넣는다 → 같은 content가 두 행이 되지 않는다.
 
     반환: [(효능 id, 기여 성분 INCI 이름들)] → publish_ingredients(effect_links=)에 넘긴다."""
+    verified = functions is not None   # 어드민이 안전나라 확인을 마쳤는가
+    approved = {(f or "").strip().upper() for f in functions or []}
     rows: list[tuple[str, int, str | None, str | None, list[str]]] = []
     for e in effects:
         target = (e.get("target") or "").strip()
-        if target:
-            rows.append((target, _int(e.get("contributingIngredientCount")) or 0, e.get("compositeStrength"),
-                         e.get("bestEvidenceLevel"), list(e.get("contributingIngredients") or [])))
-    for fn in functions or []:
-        target = MFDS_FUNCTION_TARGETS.get((fn or "").strip().upper())
+        if not target:
+            continue
+        required = REGULATED_TARGETS.get(target)
+        if verified and required and required not in approved:
+            continue   # 기능성 인증이 없어 표시할 수 없는 효능
+        rows.append((target, _int(e.get("contributingIngredientCount")) or 0, e.get("compositeStrength"),
+                     e.get("bestEvidenceLevel"), list(e.get("contributingIngredients") or [])))
+    for fn in sorted(approved):
+        target = MFDS_FUNCTION_TARGETS.get(fn)
         if not target:
             continue
         found = next((i for i, r in enumerate(rows) if r[0] == target), None)
